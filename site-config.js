@@ -12,5 +12,5 @@ window.PUBLIC_SITE_CONFIG = Object.freeze({
   apiBaseUrl: 'https://academy-navy-one.vercel.app',
   adminPortalUrl: isLocalAcademyPreview
     ? '../admin-portal/index.html'
-    : 'https://academy-navy-one.vercel.app'
+    : 'https://academy-navy-one.vercel.app/login.html'
 });
