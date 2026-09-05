@@ -48,7 +48,7 @@ const DEFAULT_PUBLIC_COURSES = [
   { id: 'CRS-105', title: 'Tally Prime with GST', duration: '4 Months', description: 'Learn computerized accounting, inventory management, GST invoicing, taxation reports, and payroll using Tally Prime.' },
   { id: 'CRS-106', title: 'Graphic Design Fundamentals', duration: '6 Months', description: 'Build creative design skills through typography, image editing, branding, social media graphics, and print layouts.' }
 ];
-const PUBLIC_COURSE_SEED_VERSION = '1';
+const PUBLIC_COURSE_SEED_VERSION = '2';
 
 const INDIAN_STATES_DISTRICTS = {
   "Andhra Pradesh": ["Alluri Sitharama Raju", "Anakapalli", "Ananthapuramu", "Annamayya", "Bapatla", "Chittoor", "Dr. B.R. Ambedkar Konaseema", "East Godavari", "Eluru", "Guntur", "Kakinada", "Krishna", "Kurnool", "Nandyal", "NTR", "Palnadu", "Parvathipuram Manyam", "Prakasam", "Sri Potti Sriramulu Nellore", "Sri Sathya Sai", "Srikakulam", "Tirupati", "Visakhapatnam", "Vizianagaram", "West Godavari", "YSR Kadapa"],
@@ -456,6 +456,14 @@ class PublicAcademyApp {
 
         if (Array.isArray(courses)) {
           this.courses = courses;
+          // The Diganta site always includes its six established courses.
+          // This also repairs browsers that cached the older three-course set.
+          if (!this.currentOwnerEmail.includes('poulami')) {
+            const cloudCourseIds = new Set(this.courses.map(course => course.id));
+            DEFAULT_PUBLIC_COURSES.forEach(course => {
+              if (!cloudCourseIds.has(course.id)) this.courses.push({ ...course });
+            });
+          }
           localStorage.setItem(this.getStorageKey(STORAGE_KEYS.COURSES), JSON.stringify(this.courses));
           this.renderHomeCourses();
           this.populateCourseDropdown();
