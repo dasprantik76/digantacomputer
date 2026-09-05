@@ -797,7 +797,9 @@ class PublicAcademyApp {
   }
 
   syncAuthCodeFromOtpDigits() {
-    if (!this.authOtpDigits || !this.regAuthCode) return;
+    // The current form uses one regular six-digit input. Only synchronize
+    // when the legacy individual OTP boxes are actually present.
+    if (!this.authOtpDigits || this.authOtpDigits.length === 0 || !this.regAuthCode) return;
     const code = Array.from(this.authOtpDigits).map(input => input.value || '').join('');
     this.regAuthCode.value = code;
   }
