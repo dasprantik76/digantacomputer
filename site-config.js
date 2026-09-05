@@ -9,8 +9,8 @@ const isLocalAcademyPreview =
 
 window.PUBLIC_SITE_CONFIG = Object.freeze({
   academySlug: 'prantik',
-  apiBaseUrl: 'https://academy-navy-one.vercel.app',
+  apiBaseUrl: 'https://diganta-admin-portal.vercel.app',
   adminPortalUrl: isLocalAcademyPreview
     ? '../admin-portal/index.html'
-    : 'https://academy-navy-one.vercel.app/login.html'
+    : 'https://diganta-admin-portal.vercel.app'
 });
