@@ -1280,14 +1280,35 @@ class PublicAcademyApp {
     const courseId = this.regCourseInput.value.trim();
     const authCode = (this.regAuthCode?.value || Array.from(this.authOtpDigits || []).map(i => i.value).join('')).trim();
 
-    // Required Validations
-    if (
-      !fullName || !dob || !fatherName || !motherName || !aadhar || !gender ||
-      !maritalStatus || !category || !religion || !phone || !email ||
-      !state || !district || !pinCode || !qualification || !address ||
-      !courseId || !authCode
-    ) {
-      this.showToast('Please complete all required fields.', 'error');
+    // Required validation with a precise message and focus target. Custom
+    // dropdowns store their values in hidden inputs, so native browser
+    // validation cannot reliably identify them for the student.
+    const requiredFields = [
+      { value: fullName, label: 'Full Name', element: this.regFullName },
+      { value: dob, label: 'Date of Birth', element: this.regDob },
+      { value: fatherName, label: 'Father\'s Name', element: this.regFatherName },
+      { value: motherName, label: 'Mother\'s Name', element: this.regMotherName },
+      { value: aadhar, label: 'Aadhar Number', element: this.regAadhar },
+      { value: gender, label: 'Gender', element: this.regGenderTrigger },
+      { value: maritalStatus, label: 'Marital Status', element: this.regMaritalStatusTrigger },
+      { value: category, label: 'Category', element: this.regCategoryTrigger },
+      { value: religion, label: 'Religion', element: this.regReligionTrigger },
+      { value: qualification, label: 'Highest Qualification', element: this.regQualificationTrigger },
+      { value: phone, label: 'Mobile Number', element: this.regPhone },
+      { value: email, label: 'Email Address', element: this.regEmail },
+      { value: state, label: 'State', element: this.regStateTrigger },
+      { value: district, label: 'District', element: this.regDistrictTrigger },
+      { value: pinCode, label: 'Pin Code', element: this.regPinCode },
+      { value: address, label: 'Full Address', element: this.regAddress },
+      { value: courseId, label: 'Course', element: this.regCourseTrigger },
+      { value: authCode, label: 'Authentication Code', element: this.regAuthCode }
+    ];
+    const missingField = requiredFields.find(field => !field.value);
+    if (missingField) {
+      missingField.element?.classList.add('input-error');
+      missingField.element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      window.setTimeout(() => missingField.element?.focus(), 350);
+      this.showToast(`Please complete the ${missingField.label} field.`, 'error');
       return;
     }
 
