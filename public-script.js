@@ -622,8 +622,8 @@ class PublicAcademyApp {
     }
 
     // Certificate Search Form Submit Handler
-    if (this.certificateSearchForm) {
-      this.certificateSearchForm.addEventListener('submit', (e) => this.handleCertificateSearch(e));
+    if (this.certSearchForm) {
+      this.certSearchForm.addEventListener('submit', (e) => this.handleCertificateSearch(e));
     }
 
     if (this.homeContactForm) {
