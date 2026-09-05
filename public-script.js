@@ -428,7 +428,7 @@ class PublicAcademyApp {
           this.currentOwnerEmail = json.tenant.ownerEmail;
         }
 
-        const { profile, courses, students, authToken } = json.data;
+        const { profile, courses, students } = json.data;
 
         if (Array.isArray(courses)) {
           this.courses = courses;
@@ -453,11 +453,6 @@ class PublicAcademyApp {
 
         if (Array.isArray(students)) {
           localStorage.setItem(this.getStorageKey(STORAGE_KEYS.STUDENTS), JSON.stringify(students));
-        }
-
-        if (authToken && authToken.code && authToken.expiresAt) {
-          localStorage.setItem(this.getStorageKey(STORAGE_KEYS.AUTH_TOKEN), JSON.stringify(authToken));
-          localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, JSON.stringify(authToken));
         }
 
         // Remove tenantGuard if it was an unverified custom subdomain
@@ -1332,65 +1327,6 @@ class PublicAcademyApp {
       return;
     }
 
-    // Strictly fetch and validate against the current active Authentication Token
-    let activeToken = null;
-    try {
-      const response = await fetch(getPublicApiUrl(`?academy=${encodeURIComponent(this.currentAcademySlug)}`), { cache: 'no-store' });
-      if (response.ok) {
-        const json = await response.json();
-        const cloudToken = json?.data?.authToken;
-        if (cloudToken && cloudToken.code) {
-          activeToken = cloudToken;
-          localStorage.setItem(this.getStorageKey(STORAGE_KEYS.AUTH_TOKEN), JSON.stringify(cloudToken));
-        }
-      }
-    } catch (err) {}
-
-    if (!activeToken) {
-      const raw = localStorage.getItem(this.getStorageKey(STORAGE_KEYS.AUTH_TOKEN)) || localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
-      if (raw) {
-        try {
-          activeToken = JSON.parse(raw);
-        } catch (e) {}
-      }
-    }
-
-    if (!activeToken || !activeToken.code) {
-      this.showToast('No active authentication code found. Please request the current code from your administrator.', 'error');
-      if (this.authOtpDigits && this.authOtpDigits.length > 0) {
-        this.authOtpDigits.forEach(d => d.classList.add('input-error'));
-        this.authOtpDigits[0].focus();
-      } else {
-        this.regAuthCode?.classList.add('input-error');
-        this.regAuthCode?.focus();
-      }
-      return;
-    }
-
-    if (activeToken.expiresAt && Date.now() > activeToken.expiresAt) {
-      this.showToast('The authentication code has expired. Please request a new code from your administrator.', 'error');
-      if (this.authOtpDigits && this.authOtpDigits.length > 0) {
-        this.authOtpDigits.forEach(d => d.classList.add('input-error'));
-        this.authOtpDigits[0].focus();
-      } else {
-        this.regAuthCode?.classList.add('input-error');
-        this.regAuthCode?.focus();
-      }
-      return;
-    }
-
-    if (String(activeToken.code).trim() !== String(authCode).trim()) {
-      this.showToast('Invalid authentication code. Please enter the current 6-digit code shown in the Admin Portal.', 'error');
-      if (this.authOtpDigits && this.authOtpDigits.length > 0) {
-        this.authOtpDigits.forEach(d => d.classList.add('input-error'));
-        this.authOtpDigits[0].focus();
-      } else {
-        this.regAuthCode?.classList.add('input-error');
-        this.regAuthCode?.focus();
-      }
-      return;
-    }
-
     // Generate Unique Student Identifier
     const studentId = `STU-${Math.floor(1000 + Math.random() * 9000)}`;
     const joinDate = new Date().toISOString().split('T')[0];
@@ -1425,7 +1361,49 @@ class PublicAcademyApp {
       academySlug: this.currentAcademySlug
     };
 
-    // Save to local storage students registry for this tenant
+    // The server resolves the academy exclusively from this deployment's slug,
+    // validates that academy's code and expiry, and saves only after success.
+    let registrationResult;
+    if (this.btnSubmitReg) this.btnSubmitReg.disabled = true;
+    try {
+      const response = await fetch(getPublicApiUrl(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'register_student',
+          payload: {
+            student: newStudent,
+            academySlug: this.currentAcademySlug,
+            authCode
+          }
+        })
+      });
+      registrationResult = await response.json().catch(() => null);
+
+      if (!response.ok || !registrationResult?.success) {
+        const errorMessages = {
+          WRONG_CODE: 'Incorrect authentication code. Please check the current code from the academy.',
+          EXPIRED_CODE: 'The authentication code has expired. Please request a new code from the academy.',
+          NO_ACTIVE_CODE: 'No active authentication code is available. Please contact the academy.',
+          ACADEMY_NOT_FOUND: 'This public site is not connected to a registered academy.',
+          INVALID_COURSE: 'The selected course is no longer available. Please select another course.'
+        };
+        const message = errorMessages[registrationResult?.code] || registrationResult?.error || 'Registration could not be completed. Please try again.';
+        this.regAuthCode?.classList.add('input-error');
+        this.regAuthCode?.focus();
+        this.showToast(message, 'error');
+        return;
+      }
+    } catch (error) {
+      this.showToast('Unable to contact the academy registration server. Please try again.', 'error');
+      return;
+    } finally {
+      if (this.btnSubmitReg) this.btnSubmitReg.disabled = false;
+    }
+
+    const savedStudent = registrationResult.student || newStudent;
+
+    // Cache the server-confirmed registration locally for this tenant.
     let allStudents = [];
     const rawStudents = localStorage.getItem(this.getStorageKey(STORAGE_KEYS.STUDENTS)) || localStorage.getItem(STORAGE_KEYS.STUDENTS);
     if (rawStudents) {
@@ -1436,23 +1414,9 @@ class PublicAcademyApp {
       }
     }
 
-    allStudents.unshift(newStudent);
+    allStudents.unshift(savedStudent);
     localStorage.setItem(this.getStorageKey(STORAGE_KEYS.STUDENTS), JSON.stringify(allStudents));
     localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(allStudents));
-
-    // Post to Multi-Tenant MongoDB cloud storage in background
-    fetch(getPublicApiUrl(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'add_student',
-        payload: {
-          student: newStudent,
-          ownerEmail: this.currentOwnerEmail,
-          academySlug: this.currentAcademySlug
-        }
-      })
-    }).catch(() => {});
 
     // Display Success Receipt Dialog
     if (this.modalStudentId) this.modalStudentId.textContent = studentId;
