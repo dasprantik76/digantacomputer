@@ -5,33 +5,9 @@
  * Student Certificate Verification by Mobile Number & Date of Birth
  */
 
-const PAGE_SCROLL_KEY = `academy_scroll_${window.location.pathname}${window.location.search}${window.location.hash}`;
 const PUBLIC_SITE_CONFIG = window.PUBLIC_SITE_CONFIG || {};
 const PUBLIC_API_BASE_URL = String(PUBLIC_SITE_CONFIG.apiBaseUrl || '').replace(/\/$/, '');
 const getPublicApiUrl = (query = '') => `${PUBLIC_API_BASE_URL}/api/data${query}`;
-
-if ('scrollRestoration' in history) {
-  history.scrollRestoration = 'manual';
-}
-
-const savePageScroll = () => {
-  sessionStorage.setItem(PAGE_SCROLL_KEY, String(window.scrollY));
-};
-
-window.addEventListener('pagehide', savePageScroll);
-window.addEventListener('beforeunload', savePageScroll);
-
-window.addEventListener('load', () => {
-  const navigation = performance.getEntriesByType('navigation')[0];
-  if (navigation && navigation.type !== 'reload') return;
-
-  const savedScroll = Number(sessionStorage.getItem(PAGE_SCROLL_KEY));
-  if (!Number.isFinite(savedScroll)) return;
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => window.scrollTo(0, savedScroll));
-  });
-});
 
 const STORAGE_KEYS = {
   COURSES: 'educore_academy_courses',
