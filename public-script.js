@@ -321,17 +321,24 @@ class PublicAcademyApp {
     this.regCourseMenu = document.getElementById('regCourseMenu');
 
     // Certificate Verification Form Elements
-    this.certSearchForm = document.getElementById('certSearchForm');
+    this.certSearchForm = document.getElementById('certificateSearchForm');
     this.certPhone = document.getElementById('certPhone');
     this.certPhoneError = document.getElementById('certPhoneError');
     this.certDob = document.getElementById('certDob');
-    this.btnSearchCertificate = document.getElementById('btnSearchCertificate');
+    this.btnSearchCertificate = document.getElementById('btnSearchCert');
 
     this.certResultContainer = document.getElementById('certResultContainer');
     this.certNotFoundState = document.getElementById('certNotFoundState');
     this.certIncompleteState = document.getElementById('certIncompleteState');
     this.certIncompleteDesc = document.getElementById('certIncompleteDesc');
+    this.btnResetCertSearch = document.getElementById('btnResetCertSearch');
     this.btnPrintCertificate = document.getElementById('btnPrintCertificate');
+    this.certDocAcademyName = document.getElementById('certDocAcademyName');
+    this.certDocStudentName = document.getElementById('certDocStudentName');
+    this.certDocCourseTitle = document.getElementById('certDocCourseTitle');
+    this.certDocStudentId = document.getElementById('certDocStudentId');
+    this.certDocIssueDate = document.getElementById('certDocIssueDate');
+    this.certDocSignatory = document.getElementById('certDocSignatory');
 
     // Success Modal
     this.successModal = document.getElementById('registrationSuccessModal');
