@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Public Admissions Portal</title>
+  <meta name="description" content="Academy Public Portal - Explore courses and register directly online">
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="public-style.css?v=24.7">
+  <script src="site-config.js"></script>
+  <script>
+    // Fast synchronous pre-hydration to eliminate any flash or delay of text
+    (function () {
+      try {
+        const host = window.location.hostname.toLowerCase();
+        const configuredSlug = window.PUBLIC_SITE_CONFIG && window.PUBLIC_SITE_CONFIG.academySlug;
+        let slug = configuredSlug || 'prantik';
+        if (!configuredSlug) {
+          const parts = host.split('.');
+          if (parts.length >= 3 && parts[0] !== 'www' && parts[0] !== 'academy' && parts[0] !== 'app') {
+            slug = parts[0];
+          } else {
+            const params = new URLSearchParams(window.location.search);
+            const q = params.get('academy') || params.get('owner');
+            if (q) slug = q.toLowerCase();
+          }
+        }
+
+        let isKnown = false;
+        let resolvedName = '';
+        if (slug === 'poulami') {
+          resolvedName = 'Poulami Dance Academy';
+          isKnown = true;
+        } else if (slug === 'prantik' || slug === 'ppxt') {
+          resolvedName = 'Diganta Computer Centre';
+          isKnown = true;
+        }
+
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith('educore_academy_profile_')) {
+            const raw = localStorage.getItem(k);
+            if (raw) {
+              const p = JSON.parse(raw);
+              if (p && (p.slug === slug || (slug === 'ppxt' && p.slug === 'ppxt'))) {
+                if (p.academyName) resolvedName = p.academyName;
+                isKnown = true;
+                break;
+              }
+            }
+          }
+        }
+        window.__INITIAL_ACADEMY_NAME__ = resolvedName || '';
+        window.__IS_KNOWN_TENANT__ = isKnown;
+        if (window.__INITIAL_ACADEMY_NAME__) {
+          document.title = window.__INITIAL_ACADEMY_NAME__ + ' | Public Admissions Portal';
+        }
+
+        // If this is an unverified subdomain, hide body immediately to prevent ANY flash of default content
+        if (!isKnown && slug !== 'prantik' && slug !== 'ppxt' && slug !== 'poulami' && host !== 'localhost' && host !== '127.0.0.1') {
+          document.write('<style id="tenantGuard">body { display: none !important; }</style>');
+        }
+      } catch (e) {
+        window.__INITIAL_ACADEMY_NAME__ = '';
+      }
+    })();
+  </script>
+</head>
+
+<body>
+
+  <!-- ================= TOP THIN YELLOWISH NOTICE BAR ================= -->
+  <div class="top-notice-bar" id="topNoticeBar">
+    <div class="notice-bar-container">
+      <div class="notice-label">
+        <span class="notice-bell-icon">🔔</span>
+        <strong id="noticeBarHeading">Important Notices:</strong>
+      </div>
+      <div class="notice-content-marquee">
+        <div class="marquee-track" id="noticeMarqueeTrack">
+          <span class="marquee-content" id="marqueeContentA">
+            <a href="#student" class="notice-link" id="noticeLink1">Notice: Admissions Open for 2026 Academic
+              Batches</a>
+            <span class="notice-separator">|</span>
+            <a href="#certificate" class="notice-link" id="noticeLink2">Fast-track Certificate Verification Portal is
+              Live</a>
+            <span class="notice-separator">|</span>
+            <a href="#about" class="notice-link" id="noticeLink3">Contact Admissions Helpline for Registration
+              Assistance</a>
+            <span class="notice-separator">|</span>
+          </span>
+          <span class="marquee-content" id="marqueeContentB">
+            <a href="#student" class="notice-link" id="noticeLink1B">Notice: Admissions Open for 2026 Academic
+              Batches</a>
+            <span class="notice-separator">|</span>
+            <a href="#certificate" class="notice-link" id="noticeLink2B">Fast-track Certificate Verification Portal is
+              Live</a>
+            <span class="notice-separator">|</span>
+            <a href="#about" class="notice-link" id="noticeLink3B">Contact Admissions Helpline for Registration
+              Assistance</a>
+            <span class="notice-separator">|</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= TOP WHITE BADGE BANNER ================= -->
+  <section class="top-badge-banner" id="topBadgeBanner">
+    <div class="badge-banner-container">
+      <div class="badge-banner-left">
+        <img src="https://ik.imagekit.io/d3ycnoiwd/academy/20%20Years%20Badge%20copy.png" alt="20 Years Badge"
+          class="badge-banner-img" loading="eager">
+        <div class="badge-banner-text">
+          <span class="badge-est-text">EST. 2005</span>
+          <span class="badge-tagline-text">Building Skills. Creating Futures.</span>
+        </div>
+      </div>
+      <div class="badge-banner-actions">
+        <a class="badge-admission-call" href="tel:9733894742" aria-label="Call 9733894742 for admission">
+          <span class="badge-call-icon" aria-hidden="true"><i class="fa-solid fa-phone"></i></span>
+          <span class="badge-call-details">
+            <span class="badge-call-label">For admission</span>
+            <strong>97338 94742</strong>
+          </span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TOP NAVIGATION BAR ================= -->
+  <!-- Main public navigation -->
+  <header class="public-navbar">
+    <div class="nav-container">
+      <a href="#home" class="nav-brand" id="brandHomeLink">
+        <div class="brand-icon">
+          <i class="fa-solid fa-graduation-cap"></i>
+        </div>
+        <span class="brand-title" id="navAcademyName">
+          <script>document.write(window.__INITIAL_ACADEMY_NAME__ || '');</script>
+        </span>
+        <sup class="nav-trademark" aria-label="Trademark">™</sup>
+      </a>
+
+      <!-- Desktop & Mobile Navigation Links -->
+      <nav>
+        <ul class="nav-menu" id="navMenu">
+          <li>
+            <a href="#home" class="nav-link active" data-view="home" id="navHomeLink">
+              <i class="fa-solid fa-house"></i> HOME
+            </a>
+          </li>
+          <li>
+            <a href="#courses" class="nav-link" data-view="courses" id="navCoursesLink">
+              <i class="fa-solid fa-book-open"></i> COURSES
+            </a>
+          </li>
+          <li>
+            <a href="#student" class="nav-link" data-view="student" id="navStudentLink">
+              <i class="fa-solid fa-user-graduate"></i> STUDENT
+            </a>
+          </li>
+          <li>
+            <a href="#certificate" class="nav-link" data-view="certificate" id="navCertificateLink">
+              <i class="fa-solid fa-award"></i> CERTIFICATE
+            </a>
+          </li>
+          <li>
+            <a href="#about" class="nav-link" data-view="about" id="navAboutLink">
+              <i class="fa-solid fa-circle-info"></i> ABOUT
+            </a>
+          </li>
+          <li class="mobile-nav-admin-item">
+            <a href="#" class="nav-link-admin-mobile" id="navMobileAdminLogin">
+              <i class="fa-solid fa-user-shield"></i> Admin Login
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="#" class="btn-nav-admin" id="btnNavAdminLogin" title="Admin Portal Sign In">
+          <i class="fa-solid fa-user-shield"></i>
+          <span>Admin Login</span>
+        </a>
+
+        <button class="btn-mobile-nav" id="btnMobileNav" aria-label="Toggle navigation">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+
+  <!-- ================= VIEW 1: HOME PAGE ================= -->
+  <div class="view-section active" id="view-home">
+    <!-- Hero Banner Section -->
+    <section class="hero-section" id="heroSection">
+      <!-- Full-Height Right-Side Image Container with Inward Chevron Cut & Cyan Accent Border -->
+      <div class="hero-image-placeholder" id="heroImagePlaceholder">
+        <!-- Cyan/Blue Accent Border Layer -->
+        <div class="hero-chevron-border"></div>
+
+        <!-- Inset Image Layer -->
+        <div class="hero-chevron-inner">
+          <img 
+            id="heroImg1" 
+            class="hero-chevron-slide active" 
+            src="https://ik.imagekit.io/d3ycnoiwd/academy/hero1.jpg?updatedAt=1788205299357" 
+            alt="Academy Building Signboard" 
+            loading="eager"
+          />
+          <img 
+            id="heroImg2" 
+            class="hero-chevron-slide" 
+            src="https://ik.imagekit.io/d3ycnoiwd/academy/hero2.jpg?updatedAt=1788205300622" 
+            alt="Academy Classroom Training" 
+            loading="eager"
+          />
+        </div>
+      </div>
+
+      <!-- Hero Content Container -->
+      <div class="hero-container">
+        <div class="hero-content-col">
+          <!-- Left Column Grid Item: Logo + Custom TM Badge -->
+          <div class="hero-logo-container">
+            <div class="hero-logo-wrap">
+              <img 
+                src="https://ik.imagekit.io/d3ycnoiwd/academy/logo%20digu%20h.png" 
+                alt="Academy Logo" 
+                class="hero-logo-img" 
+                id="heroLogoImg"
+                loading="eager"
+              >
+              <div class="hero-tm-badge" aria-label="Trade Mark">TM</div>
+            </div>
+          </div>
+
+          <!-- Right Column Grid Item 1: Title & Subtitle -->
+          <div class="hero-text-content">
+            <h1 class="hero-title" id="heroTitleWrapper">
+              <span class="hero-title-line1" id="heroTitleLine1">DIGANTA</span>
+              <span class="hero-title-line2" id="heroTitleLine2">Computer Centre</span>
+            </h1>
+            <p class="hero-desc" id="heroDescText">
+              Empowering learners with industry-standard courses and certified training.
+            </p>
+          </div>
+
+          <!-- Right Column Grid Item 2: Pill Badge Left-Aligned with Text -->
+          <div class="hero-badge-wrap">
+            <div class="hero-badge" id="heroBadgeWrapper">
+              <i class="fa-solid fa-circle-check"></i>
+              <span id="heroTaglineText">Admissions & Registrations Open</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-trust-strip" aria-label="Academy highlights">
+      <div class="home-trust-inner">
+        <div class="trust-item"><strong>20<span class="trust-plus">+</span></strong><span>Years of learning excellence</span></div>
+        <div class="trust-divider"></div>
+        <div class="trust-item"><i class="fa-solid fa-laptop-code"></i><span>Hands-on computer training</span></div>
+        <div class="trust-divider"></div>
+        <div class="trust-item"><i class="fa-solid fa-certificate"></i><span>Recognised course certificates</span></div>
+        <div class="trust-divider"></div>
+        <div class="trust-item"><i class="fa-solid fa-people-group"></i><span>Supportive expert faculty</span></div>
+      </div>
+    </section>
+
+    <!-- Approval & Accreditation Logos -->
+    <section class="home-approvals" aria-labelledby="approvalHeading">
+      <div class="home-approvals-inner">
+        <h2 id="approvalHeading">
+          <span class="approval-check" aria-hidden="true"><i class="fa-solid fa-check"></i></span>
+          <span>REGISTERED UNDER</span>
+        </h2>
+        <div class="approval-logos">
+          <div class="approval-logo-card">
+            <img src="https://ik.imagekit.io/d3ycnoiwd/academy/certificate-logos/wbgovt.jpg"
+              alt="Government of West Bengal logo" loading="lazy">
+          </div>
+          <div class="approval-logo-card">
+            <img src="https://ik.imagekit.io/d3ycnoiwd/academy/certificate-logos/london.jpg"
+              alt="London accreditation certification logo" loading="lazy">
+          </div>
+          <div class="approval-logo-card">
+            <img src="https://ik.imagekit.io/d3ycnoiwd/academy/certificate-logos/msme.jpg"
+              alt="Ministry of MSME, Government of India logo" loading="lazy">
+          </div>
+          <div class="approval-logo-card">
+            <img src="https://ik.imagekit.io/d3ycnoiwd/academy/certificate-logos/iso.jpg"
+              alt="ISO 9001 certification logo" loading="lazy">
+          </div>
+          <div class="approval-logo-card">
+            <img src="https://ik.imagekit.io/d3ycnoiwd/academy/certificate-logos/pqc.jpg"
+              alt="Paramount Quality Certifications logo" loading="lazy">
+          </div>
+          <div class="approval-logo-card">
+            <img src="https://ik.imagekit.io/d3ycnoiwd/academy/certificate-logos/Digital-india-black.jpg"
+              alt="Digital India logo" loading="lazy">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Available Courses Showcase -->
+    <section class="home-section home-courses-section" id="availableCoursesSection">
+      <div class="home-section-heading courses-section-heading">
+        <h2 class="section-title">Our Career-focused Courses</h2>
+        <p class="section-subtitle">Explore practical, industry-relevant programs designed to build valuable skills and prepare you for future opportunities.</p>
+      </div>
+
+      <div class="courses-grid" id="homeCoursesGrid">
+        <!-- Rendered dynamically from Admin Portal -->
+      </div>
+      <div class="courses-explore-action">
+        <a href="#courses" class="btn-explore-courses">
+          <span>Explore all the courses</span>
+          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+        </a>
+      </div>
+    </section>
+
+    <!-- Learning Experience -->
+    <section class="home-experience-section">
+      <div class="home-section experience-layout">
+        <div class="experience-copy">
+          <span class="section-tag section-tag-light">Learn • Practice • Grow</span>
+          <h2>Step into the<br><span class="experience-title-line">Digital Future with us.</span></h2>
+          <p>At Diganta Computer Centre, we help students build practical computer skills for a smarter, more confident future.</p>
+          <div class="experience-points">
+            <div><i class="fa-solid fa-check"></i><span><strong>Learn Through Hands-On Practical Training</strong></span></div>
+            <div><i class="fa-solid fa-check"></i><span><strong>Build Skills for a Future-Ready Career</strong></span></div>
+            <div><i class="fa-solid fa-check"></i><span><strong>Quality Computer Education at Affordable Fees</strong></span></div>
+          </div>
+          <a href="#student" class="btn-home-outline">Register now <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+        <div class="experience-panel">
+          <div class="experience-panel-top">
+            <span class="live-dot"></span> A learning environment built for you
+          </div>
+          <figure class="experience-image-frame">
+            <img src="https://ik.imagekit.io/d3ycnoiwd/academy/students1.jpg"
+              alt="Students learning at Diganta Computer Centre" loading="lazy">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- Student Journey -->
+    <section class="home-section home-journey-section">
+      <div class="section-header">
+        <h2 class="section-title">Start learning in <span class="journey-title-highlight">3 simple steps</span></h2>
+        <p class="section-subtitle">From choosing a program to earning your certificate, we keep the process clear and accessible.</p>
+      </div>
+      <div class="journey-grid">
+        <article class="journey-card"><span>01</span><div class="journey-icon"><i class="fa-solid fa-book-open-reader"></i></div><h3>Choose your course</h3><p>Explore available programs and find the right match for your goals.</p></article>
+        <article class="journey-card"><span>02</span><div class="journey-icon"><i class="fa-solid fa-pencil"></i></div><h3>Complete registration</h3><p>Submit your details securely through our simple online form.</p></article>
+        <article class="journey-card"><span>03</span><div class="journey-icon"><i class="fa-solid fa-award"></i></div><h3>Learn and get certified</h3><p>Build practical expertise and earn a verifiable course certificate.</p></article>
+      </div>
+    </section>
+
+    <!-- Gallery -->
+    <section class="home-gallery-section" aria-labelledby="galleryHeading">
+      <div class="home-section home-gallery-inner">
+        <div class="section-header">
+          <h2 class="section-title" id="galleryHeading">Our Students</h2>
+          <p class="section-subtitle">A glimpse into our classrooms, practical sessions, and student learning experiences.</p>
+        </div>
+        <div class="gallery-grid">
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery1.jpg" alt="Diganta Computer Centre gallery photo 1" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery2.jpg" alt="Diganta Computer Centre gallery photo 2" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery3.jpg" alt="Diganta Computer Centre gallery photo 3" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery4.jpg" alt="Diganta Computer Centre gallery photo 4" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery5.jpg" alt="Diganta Computer Centre gallery photo 5" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery6.jpg" alt="Diganta Computer Centre gallery photo 6" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery7.jpg" alt="Diganta Computer Centre gallery photo 7" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery8.jpg" alt="Diganta Computer Centre gallery photo 8" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery9.jpg" alt="Diganta Computer Centre gallery photo 9" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery10.jpg" alt="Diganta Computer Centre gallery photo 10" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery11.jpg" alt="Diganta Computer Centre gallery photo 11" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery12.jpg" alt="Diganta Computer Centre gallery photo 12" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery13.jpg" alt="Diganta Computer Centre gallery photo 13" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery14.jpg" alt="Diganta Computer Centre gallery photo 14" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery15.jpg" alt="Diganta Computer Centre gallery photo 15" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery16.jpg" alt="Diganta Computer Centre gallery photo 16" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery17.jpg" alt="Diganta Computer Centre gallery photo 17" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery18.jpg" alt="Diganta Computer Centre gallery photo 18" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery19.jpg" alt="Diganta Computer Centre gallery photo 19" loading="lazy"></figure>
+          <figure class="gallery-item"><img src="https://ik.imagekit.io/d3ycnoiwd/academy/gallery/gallery20.jpg" alt="Diganta Computer Centre gallery photo 20" loading="lazy"></figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact & Branches -->
+    <section class="home-contact-section" id="contact">
+      <div class="home-section home-contact-inner">
+        <div class="contact-section-heading">
+          <h2>Get in touch with us</h2>
+          <p>Visit the Diganta Computer Centre branch nearest to you and begin your learning journey with us.</p>
+        </div>
+
+        <div class="contact-main-grid">
+          <div class="contact-information">
+            <div class="contact-map-label contact-address-label"><i class="fa-solid fa-address-card"></i> Address</div>
+            <div class="branch-cards">
+              <article class="branch-card">
+                <span class="branch-number"><small>Branch</small>01</span>
+                <div class="branch-icon"><i class="fa-solid fa-location-dot"></i></div>
+                <div><h3>Shyampur</h3><p>Opposite to SBI Branch</p></div>
+              </article>
+              <article class="branch-card">
+                <span class="branch-number"><small>Branch</small>02</span>
+                <div class="branch-icon"><i class="fa-solid fa-location-dot"></i></div>
+                <div><h3>Gujarpur</h3><p>Near Pichhaldaha Hospital</p></div>
+              </article>
+            </div>
+            <div class="contact-address-line"><i class="fa-solid fa-map-location-dot"></i><p>HOWRAH <span></span> 711314 <span></span> WEST BENGAL</p></div>
+          </div>
+
+          <div class="contact-map-area">
+            <div class="contact-map-label"><i class="fa-solid fa-location-crosshairs"></i> Map Location</div>
+            <div class="contact-map-card">
+              <iframe title="Diganta Computer Centre location map" src="https://maps.google.com/maps?q=22.2481616,88.033718&amp;t=k&amp;z=19&amp;output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Enquiry & Social Links -->
+    <section class="home-connect-section">
+      <div class="home-section home-connect-inner">
+        <div class="contact-connect-row">
+            <div class="contact-socials" aria-label="Social media links">
+              <div class="contact-socials-heading">
+                <span>Connect with us</span>
+              </div>
+              <div class="contact-quick-links">
+                <a href="tel:9733894742"><i class="fa-solid fa-phone"></i><span>97338 94742</span></a>
+                <a href="https://wa.me/919733894742" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-whatsapp"></i><span><small>WhatsApp</small>Chat with us</span></a>
+              </div>
+              <div class="contact-social-icons">
+                <a href="https://www.facebook.com/61579747138490" target="_blank" rel="noopener noreferrer" aria-label="Diganta Computer Centre on Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                <a href="https://instagram.com/digantacomputercentre" target="_blank" rel="noopener noreferrer" aria-label="Diganta Computer Centre on Instagram"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://youtube.com/@digantacomputer7440" target="_blank" rel="noopener noreferrer" aria-label="Diganta Computer Centre on YouTube"><i class="fa-brands fa-youtube"></i></a>
+              </div>
+            </div>
+            <form class="contact-message-card" id="homeContactForm">
+              <div class="contact-form-heading"><span><i class="fa-regular fa-paper-plane"></i></span><h3>Have a question?</h3></div>
+              <label for="contactName">Your name</label>
+              <input type="text" id="contactName" name="name" placeholder="Enter your full name" required>
+              <div class="contact-form-row">
+                <div><label for="contactPhone">Mobile number</label><input type="tel" id="contactPhone" name="phone" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" placeholder="10-digit number" required></div>
+                <div><label for="contactCourse">Interested in</label><input type="text" id="contactCourse" name="course" placeholder="Course or enquiry"></div>
+              </div>
+              <label for="contactMessage">Your message</label>
+              <textarea id="contactMessage" name="message" rows="3" placeholder="How can we help you?" required></textarea>
+              <button type="submit"><span>Send Message</span></button>
+              <small class="contact-form-note"><i class="fa-solid fa-lock"></i> Your details are used only to respond to this enquiry.</small>
+            </form>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="gallery-lightbox" id="galleryLightbox" role="dialog" aria-modal="true"
+    aria-label="Image preview" hidden>
+    <button type="button" class="gallery-lightbox-close" aria-label="Close image preview">
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+    </button>
+    <img id="galleryLightboxImage" src="" alt="">
+  </div>
+
+
+  <!-- ================= VIEW 2: COURSES PAGE ================= -->
+  <div class="view-section" id="view-courses">
+    <section class="hero-section courses-page-hero compact-page-hero">
+      <div class="hero-container">
+        <h1 class="hero-title">Our Courses</h1>
+        <p class="hero-desc">
+          Explore our active programs and choose the course that fits your learning goals.
+        </p>
+      </div>
+    </section>
+
+    <section class="home-section courses-page-content">
+      <div class="section-header">
+        <span class="section-tag">Curated Programs</span>
+        <h2 class="section-title">Available Academy Courses</h2>
+        <p class="section-subtitle">Select a course below to continue directly to student registration.</p>
+      </div>
+      <div class="courses-grid" id="coursesPageGrid">
+        <!-- Rendered dynamically from Admin Portal -->
+      </div>
+    </section>
+  </div>
+
+
+  <!-- ================= VIEW 3: STUDENT REGISTRATION PAGE ================= -->
+  <div class="view-section" id="view-student">
+    <section class="hero-section compact-page-hero">
+      <div class="hero-container">
+        <h1>Student Registration</h1>
+        <p>Please complete the registration form below to enroll in your chosen program.</p>
+      </div>
+    </section>
+
+    <div class="student-view-container">
+
+      <div class="registration-card">
+        <form id="studentRegForm" autocomplete="off">
+          <div class="form-grid">
+
+            <div class="form-section-heading form-col-full">
+              <span class="form-section-number">1</span>
+              <h2>Basic Details</h2>
+            </div>
+
+            <!-- 1. Full Name (Auto Capitalize Initials) -->
+            <div class="form-group">
+              <label for="regFullName">Full Name <span class="required-star">*</span></label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-user"></i>
+                <input type="text" id="regFullName" class="name-input-capitalized" data-capitalize="true"
+                  placeholder="Enter full name" required>
+              </div>
+            </div>
+
+            <!-- 2. Date of Birth (Beside Full Name) -->
+            <div class="form-group">
+              <label for="regDob">Date of Birth <span class="required-star">*</span></label>
+              <div class="input-icon-wrap">
+                <i class="fa-regular fa-calendar"></i>
+                <input type="date" id="regDob" required>
+              </div>
+            </div>
+
+            <!-- 3. Father's Name (Auto Capitalize Initials) -->
+            <div class="form-group">
+              <label for="regFatherName">Father's Name <span class="required-star">*</span></label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-user-tie"></i>
+                <input type="text" id="regFatherName" class="name-input-capitalized" data-capitalize="true"
+                  placeholder="Enter father's name" required>
+              </div>
+            </div>
+
+            <!-- 4. Mother's Name (Auto Capitalize Initials) -->
+            <div class="form-group">
+              <label for="regMotherName">Mother's Name <span class="required-star">*</span></label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-user"></i>
+                <input type="text" id="regMotherName" class="name-input-capitalized" data-capitalize="true"
+                  placeholder="Enter mother's name" required>
+              </div>
+            </div>
+
+            <!-- 5. Aadhar Number (12 Digits normal slot) -->
+            <div class="form-group">
+              <label for="regAadhar">Aadhar Number <span class="required-star">*</span></label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-id-card"></i>
+                <input type="text" id="regAadhar" maxlength="12" pattern="[0-9]{12}" inputmode="numeric"
+                  placeholder="12-digit Aadhar number" required>
+              </div>
+              <span class="input-error-msg" id="regAadharError">Please enter a valid 12-digit Aadhar number.</span>
+            </div>
+
+            <!-- 6. Gender (Custom Dropdown) -->
+            <div class="form-group">
+              <label>Gender <span class="required-star">*</span></label>
+              <div class="custom-select-container" id="regGenderDropdown">
+                <button type="button" class="custom-select-trigger" id="regGenderTrigger" aria-haspopup="listbox"
+                  aria-expanded="false">
+                  <i class="fa-solid fa-venus-mars select-icon"></i>
+                  <span class="select-label" id="regGenderDisplay">Select Gender</span>
+                  <i class="fa-solid fa-chevron-down select-chevron"></i>
+                </button>
+                <ul class="custom-select-menu" id="regGenderMenu" role="listbox">
+                  <li class="custom-select-option" data-value="Male" role="option">Male</li>
+                  <li class="custom-select-option" data-value="Female" role="option">Female</li>
+                  <li class="custom-select-option" data-value="Other" role="option">Other</li>
+                </ul>
+                <input type="hidden" id="regGender" required>
+              </div>
+            </div>
+
+            <!-- 6. Marital Status (Custom Dropdown) -->
+            <div class="form-group">
+              <label>Marital Status <span class="required-star">*</span></label>
+              <div class="custom-select-container" id="regMaritalStatusDropdown">
+                <button type="button" class="custom-select-trigger" id="regMaritalStatusTrigger" aria-haspopup="listbox"
+                  aria-expanded="false">
+                  <i class="fa-solid fa-ring select-icon"></i>
+                  <span class="select-label" id="regMaritalStatusDisplay">Select Marital Status</span>
+                  <i class="fa-solid fa-chevron-down select-chevron"></i>
+                </button>
+                <ul class="custom-select-menu" id="regMaritalStatusMenu" role="listbox">
+                  <li class="custom-select-option" data-value="Single / Unmarried" role="option">Single / Unmarried</li>
+                  <li class="custom-select-option" data-value="Married" role="option">Married</li>
+                  <li class="custom-select-option" data-value="Divorced" role="option">Divorced</li>
+                  <li class="custom-select-option" data-value="Widowed" role="option">Widowed</li>
+                  <li class="custom-select-option" data-value="Other" role="option">Other</li>
+                </ul>
+                <input type="hidden" id="regMaritalStatus" required>
+              </div>
+            </div>
+
+            <!-- 7. Category (Custom Dropdown) -->
+            <div class="form-group">
+              <label>Category <span class="required-star">*</span></label>
+              <div class="custom-select-container" id="regCategoryDropdown">
+                <button type="button" class="custom-select-trigger" id="regCategoryTrigger" aria-haspopup="listbox"
+                  aria-expanded="false">
+                  <i class="fa-solid fa-layer-group select-icon"></i>
+                  <span class="select-label" id="regCategoryDisplay">Select Category</span>
+                  <i class="fa-solid fa-chevron-down select-chevron"></i>
+                </button>
+                <ul class="custom-select-menu" id="regCategoryMenu" role="listbox">
+                  <li class="custom-select-option" data-value="General" role="option">General</li>
+                  <li class="custom-select-option" data-value="SC" role="option">SC</li>
+                  <li class="custom-select-option" data-value="ST" role="option">ST</li>
+                  <li class="custom-select-option" data-value="OBC" role="option">OBC</li>
+                  <li class="custom-select-option" data-value="Other" role="option">Other</li>
+                </ul>
+                <input type="hidden" id="regCategory" required>
+              </div>
+            </div>
+
+            <!-- 8. Religion (Custom Dropdown) -->
+            <div class="form-group">
+              <label>Religion <span class="required-star">*</span></label>
+              <div class="custom-select-container" id="regReligionDropdown">
+                <button type="button" class="custom-select-trigger" id="regReligionTrigger" aria-haspopup="listbox"
+                  aria-expanded="false">
+                  <i class="fa-solid fa-hands-praying select-icon"></i>
+                  <span class="select-label" id="regReligionDisplay">Select Religion</span>
+                  <i class="fa-solid fa-chevron-down select-chevron"></i>
+                </button>
+                <ul class="custom-select-menu" id="regReligionMenu" role="listbox">
+                  <li class="custom-select-option" data-value="Hinduism" role="option">Hinduism</li>
+                  <li class="custom-select-option" data-value="Islam" role="option">Islam</li>
+                  <li class="custom-select-option" data-value="Christianity" role="option">Christianity</li>
+                  <li class="custom-select-option" data-value="Sikhism" role="option">Sikhism</li>
+                  <li class="custom-select-option" data-value="Buddhism" role="option">Buddhism</li>
+                  <li class="custom-select-option" data-value="Jainism" role="option">Jainism</li>
+                  <li class="custom-select-option" data-value="Other" role="option">Other</li>
+                </ul>
+                <input type="hidden" id="regReligion" required>
+              </div>
+            </div>
+
+            <!-- 9. Highest Qualification (Custom Dropdown) -->
+            <div class="form-group">
+              <label>Highest Qualification <span class="required-star">*</span></label>
+              <div class="custom-select-container" id="regQualificationDropdown">
+                <button type="button" class="custom-select-trigger" id="regQualificationTrigger" aria-haspopup="listbox"
+                  aria-expanded="false">
+                  <i class="fa-solid fa-award select-icon"></i>
+                  <span class="select-label" id="regQualificationDisplay">Select Qualification</span>
+                  <i class="fa-solid fa-chevron-down select-chevron"></i>
+                </button>
+                <ul class="custom-select-menu" id="regQualificationMenu" role="listbox">
+                  <li class="custom-select-option" data-value="Below Madhyamik" role="option">Below Madhyamik</li>
+                  <li class="custom-select-option" data-value="Madhyamik / 10th" role="option">Madhyamik / 10th</li>
+                  <li class="custom-select-option" data-value="Higher Secondary / 12th" role="option">Higher Secondary /
+                    12th</li>
+                  <li class="custom-select-option" data-value="Diploma" role="option">Diploma</li>
+                  <li class="custom-select-option" data-value="Bachelor's Degree" role="option">Bachelor's Degree</li>
+                  <li class="custom-select-option" data-value="Master's Degree" role="option">Master's Degree</li>
+                  <li class="custom-select-option" data-value="Doctorate / PhD" role="option">Doctorate / PhD</li>
+                  <li class="custom-select-option" data-value="Other" role="option">Other</li>
+                </ul>
+                <input type="hidden" id="regQualification" required>
+              </div>
+            </div>
+
+            <div class="form-section-heading form-col-full">
+              <span class="form-section-number">2</span>
+              <h2>Contact Details</h2>
+            </div>
+
+            <!-- 10. Mobile Number (10 Digits strictly) -->
+            <div class="form-group">
+              <label for="regPhone">Mobile Number <span class="required-star">*</span></label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-phone"></i>
+                <input type="tel" id="regPhone" maxlength="10" pattern="[0-9]{10}" inputmode="numeric"
+                  placeholder="10-digit mobile number" required>
+              </div>
+              <span class="input-error-msg" id="regPhoneError">Please enter a valid 10-digit mobile number.</span>
+            </div>
+
+            <!-- 11. Email Address -->
+            <div class="form-group">
+              <label for="regEmail">Email Address <span class="required-star">*</span></label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-envelope"></i>
+                <input type="email" id="regEmail" placeholder="student@example.com" required>
+              </div>
+            </div>
+
+            <div class="form-section-heading form-col-full">
+              <span class="form-section-number">3</span>
+              <h2>Address Details</h2>
+            </div>
+
+            <!-- 12. State (Custom Dropdown) -->
+            <div class="form-group">
+              <label>State <span class="required-star">*</span></label>
+              <div class="custom-select-container" id="regStateDropdown">
+                <button type="button" class="custom-select-trigger" id="regStateTrigger" aria-haspopup="listbox"
+                  aria-expanded="false">
+                  <i class="fa-solid fa-map-location-dot select-icon"></i>
+                  <span class="select-label" id="regStateDisplay">Select State</span>
+                  <i class="fa-solid fa-chevron-down select-chevron"></i>
+                </button>
+                <ul class="custom-select-menu" id="regStateMenu" role="listbox">
+                  <!-- Populated dynamically with Indian States & UTs -->
+                </ul>
+                <input type="hidden" id="regState" required>
+              </div>
+            </div>
+
+            <!-- 13. District (Custom Dropdown populated based on State) -->
+            <div class="form-group">
+              <label>District <span class="required-star">*</span></label>
+              <div class="custom-select-container" id="regDistrictDropdown">
+                <button type="button" class="custom-select-trigger" id="regDistrictTrigger" aria-haspopup="listbox"
+                  aria-expanded="false">
+                  <i class="fa-solid fa-city select-icon"></i>
+                  <span class="select-label" id="regDistrictDisplay">Select District</span>
+                  <i class="fa-solid fa-chevron-down select-chevron"></i>
+                </button>
+                <ul class="custom-select-menu" id="regDistrictMenu" role="listbox">
+                  <!-- Populated dynamically based on selected state -->
+                </ul>
+                <input type="hidden" id="regDistrict" required>
+              </div>
+            </div>
+
+            <!-- 14. Pin Code (6 Digits strictly) -->
+            <div class="form-group">
+              <label for="regPinCode">Pin Code <span class="required-star">*</span></label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-location-dot"></i>
+                <input type="text" id="regPinCode" maxlength="6" pattern="[0-9]{6}" inputmode="numeric"
+                  placeholder="6-digit pin code" required>
+              </div>
+              <span class="input-error-msg" id="regPinCodeError">Please enter a valid 6-digit pin code.</span>
+            </div>
+
+            <!-- 15. Full Address -->
+            <div class="form-group form-col-full">
+              <label for="regAddress">Full Address <span class="required-star">*</span></label>
+              <textarea id="regAddress" rows="2" placeholder="House/Flat No., Street, Landmark, Area..."
+                required></textarea>
+            </div>
+
+            <div class="form-section-heading form-col-full">
+              <span class="form-section-number">4</span>
+              <h2>Course Selection</h2>
+            </div>
+
+            <!-- 16. Course (Custom Dropdown) -->
+            <div class="form-group form-col-full">
+              <label>Course <span class="required-star">*</span></label>
+              <div class="custom-select-container" id="regCourseDropdown">
+                <button type="button" class="custom-select-trigger" id="regCourseTrigger" aria-haspopup="listbox"
+                  aria-expanded="false">
+                  <i class="fa-solid fa-desktop select-icon"></i>
+                  <span class="select-label" id="regCourseDisplay">Select Course</span>
+                  <i class="fa-solid fa-chevron-down select-chevron"></i>
+                </button>
+                <ul class="custom-select-menu" id="regCourseMenu" role="listbox">
+                  <!-- Dynamically populated from active courses -->
+                </ul>
+                <input type="hidden" id="regCourse" required>
+              </div>
+            </div>
+
+            <div class="form-section-heading form-col-full">
+              <span class="form-section-number">5</span>
+              <h2>Verification</h2>
+            </div>
+
+            <!-- 17. Authentication Code (6-Digit OTP) -->
+            <div class="form-group form-col-full">
+              <div class="auth-code-section">
+                <div class="auth-meta">
+                  <i class="fa-solid fa-shield-halved"></i>
+                  <span>Authentication Code Verification <span class="required-star">*</span></span>
+                </div>
+
+                <div class="auth-otp-wrapper">
+                  <input type="text" class="auth-code-input" id="regAuthCode" maxlength="6" minlength="6"
+                    inputmode="numeric" pattern="[0-9]{6}" autocomplete="one-time-code"
+                    aria-label="6-digit authentication code" placeholder="Enter 6-digit code" required>
+                </div>
+
+                <p style="font-size: 0.8125rem; color: #047857; margin-top: 0.65rem; font-weight: 500;">
+                  Enter the 6-digit authentication code provided by your academy.
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-submit-reg" id="btnSubmitReg">
+              <i class="fa-solid fa-paper-plane"></i> Submit Registration
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ================= VIEW 3: CERTIFICATE DOWNLOAD PAGE ================= -->
+  <div class="view-section" id="view-certificate">
+    <section class="hero-section compact-page-hero">
+      <div class="hero-container">
+        <h1>Certificate Download</h1>
+        <p>Enter your registered mobile number and date of birth to verify and download your certificate.</p>
+      </div>
+    </section>
+
+    <div class="student-view-container">
+
+      <div class="registration-card">
+        <form id="certificateSearchForm" autocomplete="off">
+          <div class="form-grid">
+            <!-- 1. Mobile Number -->
+            <div class="form-group">
+              <label for="certPhone">Mobile Number <span class="required-star">*</span></label>
+              <div class="input-icon-wrap">
+                <i class="fa-solid fa-phone"></i>
+                <input type="tel" id="certPhone" maxlength="10" pattern="[0-9]{10}" inputmode="numeric" required>
+              </div>
+              <span class="input-error-msg" id="certPhoneError">Please enter a valid 10-digit mobile number.</span>
+            </div>
+
+            <!-- 2. Date of Birth -->
+            <div class="form-group">
+              <label for="certDob">Date of Birth <span class="required-star">*</span></label>
+              <div class="input-icon-wrap">
+                <i class="fa-regular fa-calendar"></i>
+                <input type="date" id="certDob" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-submit-reg" id="btnSearchCert">
+              <i class="fa-solid fa-magnifying-glass"></i> Verify &amp; View Certificate
+            </button>
+          </div>
+        </form>
+
+        <!-- Static Not Found Message Card (Where the certificate appears) -->
+        <div id="certNotFoundState" class="cert-not-found-card" style="display: none;">
+          <div class="cert-not-found-icon">
+            <i class="fa-solid fa-circle-exclamation"></i>
+          </div>
+          <div class="cert-not-found-text">
+            <h4>No Record Found</h4>
+            <p>No student record found with the given Mobile Number and Date of Birth.</p>
+          </div>
+        </div>
+
+        <!-- Static Certificate Not Available Message Card -->
+        <div id="certIncompleteState" class="cert-not-found-card cert-pending-card" style="display: none;">
+          <div class="cert-not-found-icon">
+            <i class="fa-solid fa-circle-info"></i>
+          </div>
+          <div class="cert-not-found-text">
+            <h4>Certificate Notice</h4>
+            <p id="certIncompleteDesc">Hello, Applicant, your certificate is not available at this moment.</p>
+          </div>
+        </div>
+
+        <!-- Certificate Verification Result Container -->
+        <div id="certResultContainer" class="certificate-preview-box" style="display: none;">
+          <div class="certificate-actions-bar">
+            <button type="button" class="btn-cert-reset" id="btnResetCertSearch">
+              <i class="fa-solid fa-arrow-left"></i> Check Another Student
+            </button>
+            <button type="button" class="btn-cert-download" id="btnPrintCertificate">
+              <i class="fa-solid fa-download"></i> Download / Print Certificate
+            </button>
+          </div>
+
+          <!-- Printable Certificate Document Area -->
+          <div id="certPrintArea">
+            <div class="certificate-document">
+              <div class="certificate-inner-border">
+                <div class="cert-corner-ornament cert-corner-tl"></div>
+                <div class="cert-corner-ornament cert-corner-tr"></div>
+                <div class="cert-corner-ornament cert-corner-bl"></div>
+                <div class="cert-corner-ornament cert-corner-br"></div>
+
+                <div class="cert-top-seal">
+                  <i class="fa-solid fa-award"></i>
+                </div>
+
+                <div class="cert-academy-title" id="certDocAcademyName">Academy</div>
+                <div class="cert-heading-label">Certificate of Program Completion</div>
+                <h1 class="cert-main-title">Academic Certificate</h1>
+
+                <p class="cert-certify-text">This is proudly presented to</p>
+                <div class="cert-student-name" id="certDocStudentName">Student Name</div>
+
+                <p class="cert-completion-desc">
+                  in recognition of their successful enrollment and dedication in fulfilling all academic requirements
+                  for the specialized training course:
+                </p>
+
+                <div class="cert-course-highlight" id="certDocCourseTitle">
+                  Course Title <span id="certDocCourseDuration">(Duration)</span>
+                </div>
+
+                <div class="cert-footer-row">
+                  <div class="cert-meta-item">
+                    Student ID: <strong id="certDocStudentId">STU-0000</strong>
+                    Date of Issue: <strong id="certDocIssueDate">Aug 29, 2026</strong>
+                  </div>
+
+                  <div class="cert-sig-block">
+                    <div class="cert-sig-line"></div>
+                    <div class="cert-sig-name" id="certDocSignatory">Authorized Signatory</div>
+                    <div class="cert-sig-title">Academy Administration</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ================= VIEW 4: ABOUT US ================= -->
+  <div class="view-section" id="view-about">
+    <section class="hero-section compact-page-hero">
+      <div class="hero-container">
+        <h1 class="hero-title">About Diganta Computer Centre</h1>
+        <p class="hero-desc">Quality technical education, practical skills, and trusted training since 2005.</p>
+      </div>
+    </section>
+
+    <section class="about-intro-section">
+      <div class="about-page-shell">
+        <p class="about-lead">Diganta Computer Centre (DCC) is an ISO 9001:2015 certified organization and a registered
+          computer training institute recognized by MSME and Paramount Quality Certifications, London. The institute is
+          registered under the West Bengal Societies Registration Act XXVI of 1961
+          (Registration No. S/1L/30592 of 2005).</p>
+      </div>
+    </section>
+
+    <section class="about-story-section" aria-labelledby="aboutInstituteHeading">
+      <div class="about-page-shell about-story-layout">
+        <div class="about-story-image">
+          <img src="https://ik.imagekit.io/d3ycnoiwd/academy/hero1.jpg"
+            alt="Students at Diganta Computer Centre" loading="lazy">
+        </div>
+        <div class="about-story-copy">
+          <span class="about-kicker">About us</span>
+          <h2 id="aboutInstituteHeading">Diganta Computer Centre™</h2>
+          <p>Established with the vision of making quality technical education accessible to everyone, we provide
+            affordable, practical, and career-oriented computer education for students from both urban and rural areas.
+            Our learning environment combines experienced guidance with hands-on training, helping students develop
+            useful digital skills and the confidence to apply them in education, employment, and everyday life.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="about-certificates-section" aria-labelledby="aboutCertificatesHeading">
+      <div class="about-page-shell">
+        <div class="about-section-heading">
+          <h2 id="aboutCertificatesHeading">Our Certifications</h2>
+          <p>A legacy of recognized training and commitment to technical education.</p>
+        </div>
+        <div class="about-certificates-grid">
+          <figure class="about-certificate-card">
+            <img src="https://ik.imagekit.io/d3ycnoiwd/academy/certificate-logos/OldCertificate.jpg"
+              alt="Diganta Computer Centre registration certificate" loading="lazy">
+          </figure>
+          <figure class="about-certificate-card about-certificate-landscape">
+            <img src="https://ik.imagekit.io/d3ycnoiwd/academy/certificate-logos/NYCLDcert.jpg"
+              alt="Diganta Computer Centre NYCLD certificate" loading="lazy">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="about-highlights-section" aria-labelledby="aboutHighlightsHeading">
+      <div class="about-page-shell">
+        <div class="about-section-heading">
+          <h2 id="aboutHighlightsHeading">Our Highlights</h2>
+          <p>With experienced faculty, modern learning methods, and hands-on practical training, Diganta Computer Centre
+            helps students build skills and confidence for higher education, employment, entrepreneurship, and
+            self-development.</p>
+        </div>
+        <ul class="about-highlights-list">
+          <li><i class="fa-solid fa-check"></i><span>ISO 9001:2015 Certified Institute</span></li>
+          <li><i class="fa-solid fa-check"></i><span>MSME Registered</span></li>
+          <li><i class="fa-solid fa-check"></i><span>Practical and job-oriented training</span></li>
+          <li><i class="fa-solid fa-check"></i><span>Experienced instructors</span></li>
+          <li><i class="fa-solid fa-check"></i><span>Skill development for students of all backgrounds</span></li>
+          <li><i class="fa-solid fa-check"></i><span>Affordable course fees</span></li>
+          <li><i class="fa-solid fa-check"></i><span>Registered under the West Bengal Societies Registration Act 1961</span></li>
+          <li><i class="fa-solid fa-check"></i><span>Committed to digital literacy and technical excellence</span></li>
+        </ul>
+        <div class="about-register-action">
+          <button type="button" class="btn btn-hero-primary" id="btnAboutGoToRegister">
+            <i class="fa-solid fa-pen-nib"></i> Proceed to Student Registration
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+
+  <!-- ================= SUCCESS CONFIRMATION MODAL ================= -->
+  <div class="modal-backdrop" id="registrationSuccessModal">
+    <div class="modal-window">
+      <div class="success-icon-badge">
+        <i class="fa-solid fa-check"></i>
+      </div>
+      <h3 class="success-title">Registration Successful!</h3>
+      <p class="success-desc">
+        Your registration has been submitted successfully.
+      </p>
+
+      <div class="receipt-box">
+        <div class="receipt-row">
+          <span>Student ID:</span>
+          <strong class="receipt-id-badge" id="modalStudentId">STU-0000</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Student Name:</span>
+          <strong id="modalStudentName">Applicant Name</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Enrolled Course:</span>
+          <strong id="modalCourseName">Program Name</strong>
+        </div>
+        <div class="receipt-row">
+          <span>Registration Date:</span>
+          <strong id="modalRegDate">2026-08-29</strong>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: center; margin-top: 1.5rem;">
+        <button type="button" class="btn btn-hero-primary" id="btnCloseSuccessModal" style="min-width: 140px;">
+          <i class="fa-solid fa-check"></i> Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="public-footer">
+    <div class="footer-main">
+      <div class="footer-brand-column">
+        <a href="#home" class="footer-brand">
+          <span class="footer-brand-icon"><i class="fa-solid fa-graduation-cap"></i></span>
+          <span id="footerAcademyName"><script>document.write(window.__INITIAL_ACADEMY_NAME__ || '');</script></span>
+          <sup>™</sup>
+        </a>
+        <p>Practical computer education, professional guidance and certified skills for a brighter digital future.</p>
+        <div class="footer-social-proof"><i class="fa-solid fa-shield-halved"></i> Trusted learning since 2005</div>
+      </div>
+      <div class="footer-column">
+        <h3>Explore</h3>
+        <a href="#home">Home</a>
+        <a href="#courses">Courses</a>
+        <a href="#about">About us</a>
+      </div>
+      <div class="footer-column">
+        <h3>Students</h3>
+        <a href="#student">Online registration</a>
+        <a href="#certificate">Verify certificate</a>
+        <a href="#courses">Browse programs</a>
+      </div>
+      <div class="footer-column footer-contact-column">
+        <h3>Get in touch</h3>
+        <a id="footerPhoneLink" href="#"><i class="fa-solid fa-phone"></i><span>Admissions helpline</span></a>
+        <a id="footerEmailLink" href="#"><i class="fa-solid fa-envelope"></i><span>Send us an email</span></a>
+        <p><i class="fa-solid fa-location-dot"></i><span id="footerAddress">West Bengal, India</span></p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 <span id="footerCopyrightName">Diganta Computer Centre</span>. All rights reserved.</p>
+      <a class="footer-powered-by" href="https://pixelsetu.com" target="_blank" rel="noopener noreferrer" aria-label="Powered by PixelSetu">
+        <span>Powered by</span>
+        <img src="https://ik.imagekit.io/d3ycnoiwd/PrantikWebsite/PixelSetu-low.png?updatedAt=1787746885719" alt="PixelSetu">
+      </a>
+    </div>
+  </footer>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Public Script -->
+  <script src="public-script.js?v=6.6"></script>
+</body>
+
+</html>
