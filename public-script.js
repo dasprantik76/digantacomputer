@@ -636,7 +636,7 @@ class PublicAcademyApp {
         if (this.certResultContainer) this.certResultContainer.style.display = 'none';
         if (this.certNotFoundState) this.certNotFoundState.style.display = 'none';
         if (this.certIncompleteState) this.certIncompleteState.style.display = 'none';
-        if (this.certificateSearchForm) this.certificateSearchForm.reset();
+        if (this.certSearchForm) this.certSearchForm.reset();
         if (this.certPhone) {
           this.certPhone.classList.remove('input-error');
           this.certPhone.focus();
