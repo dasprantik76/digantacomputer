@@ -1583,7 +1583,9 @@ input[type="date"].has-value {
 
 /* Error States for Validation */
 .input-icon-wrap input.input-error,
-input.input-error {
+input.input-error,
+.custom-select-trigger.input-error,
+.form-group textarea.input-error {
   border-color: #ef4444 !important;
   background-color: #fef2f2 !important;
   color: #991b1b !important;

@@ -626,6 +626,9 @@ class PublicAcademyApp {
     // Student Registration Form Submit Handler
     if (this.studentRegForm) {
       this.studentRegForm.addEventListener('submit', (e) => this.handleRegistration(e));
+      this.studentRegForm.addEventListener('input', (e) => {
+        e.target?.classList.remove('input-error');
+      });
     }
 
     // Certificate Search Form Submit Handler
@@ -950,6 +953,7 @@ class PublicAcademyApp {
       const label = option.textContent.trim();
 
       input.value = value;
+      trig.classList.remove('input-error');
       if (d) d.textContent = label;
       cont.classList.toggle('has-value', Boolean(value));
 
@@ -1303,12 +1307,18 @@ class PublicAcademyApp {
       { value: courseId, label: 'Course', element: this.regCourseTrigger },
       { value: authCode, label: 'Authentication Code', element: this.regAuthCode }
     ];
-    const missingField = requiredFields.find(field => !field.value);
-    if (missingField) {
-      missingField.element?.classList.add('input-error');
-      missingField.element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      window.setTimeout(() => missingField.element?.focus(), 350);
-      this.showToast(`Please complete the ${missingField.label} field.`, 'error');
+    requiredFields.forEach(field => field.element?.classList.remove('input-error'));
+    const missingFields = requiredFields.filter(field => !field.value);
+    if (missingFields.length > 0) {
+      missingFields.forEach(field => field.element?.classList.add('input-error'));
+      const firstMissingField = missingFields[0];
+      firstMissingField.element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      window.setTimeout(() => firstMissingField.element?.focus(), 350);
+      const remainingCount = missingFields.length - 1;
+      const message = remainingCount > 0
+        ? `Please complete ${firstMissingField.label} and ${remainingCount} other highlighted field${remainingCount === 1 ? '' : 's'}.`
+        : `Please complete the ${firstMissingField.label} field.`;
+      this.showToast(message, 'error');
       return;
     }
 
