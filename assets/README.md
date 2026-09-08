@@ -1,5 +1,6 @@
-The certificate background is hosted on ImageKit and configured using
-`certificateTemplateUrl` in ../site-config.js. No local template file is required.
+The original 3722 × 2480 certificate JPG is bundled as `diganta-certificate-template.jpg`
+and served from this website to avoid cross-origin image-loading failures.
+`certificateTemplateUrl` in ../site-config.js points to this local asset.
 Source: https://ik.imagekit.io/d3ycnoiwd/academy/student-certificate/diganta-certificate-template.jpg
 
 The canvas covers the sample portrait and inserts student.photoUrl if present.

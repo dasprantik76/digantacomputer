@@ -47,7 +47,7 @@
     const current = revision;
     status.textContent = 'Preparing certificate…';
     try {
-      const background = await loadImage(window.PUBLIC_SITE_CONFIG.certificateTemplateUrl);
+      const background = await loadImage(window.PUBLIC_SITE_CONFIG?.certificateTemplateUrl || 'assets/diganta-certificate-template.jpg');
       if (current !== revision) return;
       ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
       ctx.setTransform(canvas.width / 1920, 0, 0, canvas.height / 1280, 0, 0);
