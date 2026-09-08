@@ -646,6 +646,7 @@ class PublicAcademyApp {
         if (this.certResultContainer) this.certResultContainer.style.display = 'none';
         if (this.certNotFoundState) this.certNotFoundState.style.display = 'none';
         if (this.certIncompleteState) this.certIncompleteState.style.display = 'none';
+        window.CertificateCanvas.clear();
         if (this.certSearchForm) this.certSearchForm.reset();
         if (this.certPhone) {
           this.certPhone.classList.remove('input-error');
@@ -1540,6 +1541,9 @@ class PublicAcademyApp {
       return;
     }
 
+    window.CertificateCanvas.clear();
+    if (this.certResultContainer) this.certResultContainer.style.display = 'none';
+
     // Try to fetch latest students for this specific academy tenant from cloud
     let allStudents = [];
     try {
@@ -1600,23 +1604,9 @@ class PublicAcademyApp {
     if (this.certNotFoundState) this.certNotFoundState.style.display = 'none';
     if (this.certIncompleteState) this.certIncompleteState.style.display = 'none';
 
-    const academyName = this.academyProfile?.academyName || 'Academy';
-    const ownerName = this.academyProfile?.ownerName || 'Academy Director';
-
-    // Find course title
     const courseId = (student.enrolledCourseIds && student.enrolledCourseIds[0]) || '';
     const course = this.courses.find(c => c.id === courseId);
-    const courseTitle = course ? course.title : 'Professional Academic Program';
-    const courseDuration = course ? `(${course.duration})` : '';
-
-    if (this.certDocAcademyName) this.certDocAcademyName.textContent = academyName;
-    if (this.certDocStudentName) this.certDocStudentName.textContent = toTitleCase(student.name);
-    if (this.certDocCourseTitle) {
-      this.certDocCourseTitle.innerHTML = `${escapeHtml(courseTitle)} <span id="certDocCourseDuration">${escapeHtml(courseDuration)}</span>`;
-    }
-    if (this.certDocStudentId) this.certDocStudentId.textContent = student.id || 'STU-0000';
-    if (this.certDocIssueDate) this.certDocIssueDate.textContent = formatCertificateDate(student.joinDate);
-    if (this.certDocSignatory) this.certDocSignatory.textContent = toTitleCase(ownerName);
+    await window.CertificateCanvas.render(student, course);
 
     if (this.certResultContainer) {
       this.certResultContainer.style.display = 'block';
