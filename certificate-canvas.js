@@ -22,17 +22,24 @@
     const parsed = new Date(String(value).slice(0, 10) + 'T00:00:00');
     return Number.isNaN(parsed.getTime()) ? '' : parsed.toLocaleDateString('en-GB');
   }
-  function field(value, x, y, width, size = 30) {
+  function monthYear(value) {
+    if (!value) return '';
+    const parsed = new Date(String(value).slice(0, 10) + 'T00:00:00');
+    return Number.isNaN(parsed.getTime()) ? '' : parsed.toLocaleDateString('en-GB', {
+      month: 'short',
+      year: 'numeric'
+    });
+  }
+  function field(value, x, y, width, size = 37, align = 'center') {
     const text = String(value || '').replace(/\s+/g, ' ').trim();
     if (!text) return;
     ctx.save();
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(x, y - size - 4, width, size + 10);
     ctx.fillStyle = '#142d4e';
-    do { ctx.font = `600 ${size--}px Georgia, serif`; }
+    do { ctx.font = `700 ${size--}px "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, Arial, sans-serif`; }
     while (ctx.measureText(text).width > width - 12 && size > 15);
-    ctx.textAlign = 'center';
-    ctx.fillText(text, x + width / 2, y, width - 12);
+    ctx.textAlign = align;
+    const textX = align === 'left' ? x : x + width / 2;
+    ctx.fillText(text, textX, y, width - 12);
     ctx.restore();
   }
   function clear() {
@@ -51,18 +58,15 @@
       if (current !== revision) return;
       ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
       ctx.setTransform(canvas.width / 1920, 0, 0, canvas.height / 1280, 0, 0);
-      // Always remove the example portrait, including when no student photo exists.
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(1524, 650, 228, 264);
-      field(student.certificateSerial || student.id, 275, 533, 490, 27);
-      field(date(student.certificateIssueDate), 1640, 533, 200, 25);
-      field(student.name || student.fullName, 860, 650, 605);
-      field(student.fatherName, 442, 712, 514);
-      field(course?.title, 355, 773, 1055);
-      field(course?.duration, 571, 909, 420);
-      const period = [date(student.joinDate), date(student.completionDate)].filter(Boolean).join(' – ');
-      field(period, 1088, 909, 366, 26);
-      field(student.grade, 706, 970, 252);
+      field(student.certificateSerial || student.id, 284, 533, 481, 34, 'left');
+      field(date(student.certificateIssueDate), 1640, 533, 200, 34, 'left');
+      field(student.name || student.fullName, 860, 642, 605);
+      field(student.fatherName, 442, 704, 514);
+      field(course?.title, 355, 765, 1055);
+      field(course?.duration, 583, 901, 326);
+      const period = [monthYear(student.joinDate), monthYear(student.completionDate)].filter(Boolean).join(' - ');
+      field(period, 1007, 901, 437, 33);
+      field(student.grade, 706, 962, 252);
       let photoFailed = false;
       if (student.photoUrl) {
         try {
