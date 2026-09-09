@@ -3,13 +3,14 @@ and served from this website to avoid cross-origin image-loading failures.
 `certificateTemplateUrl` in ../site-config.js points to this local asset.
 Source: https://ik.imagekit.io/d3ycnoiwd/academy/student-certificate/diganta-certificate-template.jpg
 
-The canvas covers the sample portrait and inserts student.photoUrl if present.
+The canvas leaves the certificate background unchanged and overlays `student.photoUrl` when present.
 The printed QR code remains part of the background; it is not a student-specific verification QR.
 Keep this Diganta-branded template only on the appropriate academy deployment.
 
 Existing data: id, name/fullName, fatherName, joinDate, first enrolled course title and duration.
-Optional student fields: certificateSerial, certificateIssueDate (YYYY-MM-DD),
-completionDate (YYYY-MM-DD), grade, photoUrl. These optional fields do not yet have admin form controls.
+Passport photos selected during registration are uploaded to ImageKit and saved as `photoUrl`,
+`imageKitFileId`, and `imageKitFilePath`. Other optional student fields are certificateSerial,
+certificateIssueDate (YYYY-MM-DD), completionDate (YYYY-MM-DD), and grade.
 Missing values remain blank; the joining date is never substituted for the issue date.
 For remote image URLs, the server must allow CORS for canvas download.
 

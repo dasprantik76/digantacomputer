@@ -8,6 +8,9 @@
 const PUBLIC_SITE_CONFIG = window.PUBLIC_SITE_CONFIG || {};
 const PUBLIC_API_BASE_URL = String(PUBLIC_SITE_CONFIG.apiBaseUrl || '').replace(/\/$/, '');
 const getPublicApiUrl = (query = '') => `${PUBLIC_API_BASE_URL}/api/data${query}`;
+const getImageKitAuthUrl = () => `${PUBLIC_API_BASE_URL}/api/imagekit-auth`;
+const MAX_STUDENT_PHOTO_BYTES = 2 * 1024 * 1024;
+const ALLOWED_STUDENT_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const STORAGE_KEYS = {
   COURSES: 'educore_academy_courses',
@@ -266,6 +269,13 @@ class PublicAcademyApp {
     this.regPinCode = document.getElementById('regPinCode');
     this.regPinCodeError = document.getElementById('regPinCodeError');
     this.regAddress = document.getElementById('regAddress');
+    this.regStudentPhoto = document.getElementById('regStudentPhoto');
+    this.regPhotoUpload = document.getElementById('regPhotoUpload');
+    this.regPhotoPreview = document.getElementById('regPhotoPreview');
+    this.regPhotoPlaceholder = document.getElementById('regPhotoPlaceholder');
+    this.regPhotoFileName = document.getElementById('regPhotoFileName');
+    this.regPhotoHelp = document.getElementById('regPhotoHelp');
+    this.regPhotoError = document.getElementById('regPhotoError');
     this.regAuthCode = document.getElementById('regAuthCode');
     this.authOtpBoxes = document.getElementById('authOtpBoxes');
     this.authOtpDigits = document.querySelectorAll('.auth-otp-digit');
@@ -629,6 +639,10 @@ class PublicAcademyApp {
       this.studentRegForm.addEventListener('input', (e) => {
         e.target?.classList.remove('input-error');
       });
+    }
+
+    if (this.regStudentPhoto) {
+      this.regStudentPhoto.addEventListener('change', () => this.handleStudentPhotoSelection());
     }
 
     // Certificate Search Form Submit Handler
@@ -1254,6 +1268,154 @@ class PublicAcademyApp {
     }
   }
 
+  setPhotoValidationError(message = '') {
+    if (this.regPhotoError) {
+      this.regPhotoError.textContent = message;
+      this.regPhotoError.style.display = message ? 'block' : 'none';
+    }
+    this.regPhotoUpload?.classList.toggle('input-error', Boolean(message));
+    this.regStudentPhoto?.classList.toggle('input-error', Boolean(message));
+  }
+
+  validateStudentPhoto(file) {
+    if (!file) return 'Please choose a student passport photo.';
+    if (!ALLOWED_STUDENT_PHOTO_TYPES.has(String(file.type || '').toLowerCase())) {
+      return 'Please choose a JPG, JPEG, PNG or WebP image.';
+    }
+    if (file.size <= 0) return 'The selected passport photo is empty. Please choose another image.';
+    if (file.size > MAX_STUDENT_PHOTO_BYTES) {
+      return 'The passport photo must be 2 MB or smaller.';
+    }
+    return '';
+  }
+
+  handleStudentPhotoSelection() {
+    const file = this.regStudentPhoto?.files?.[0];
+    const validationError = this.validateStudentPhoto(file);
+    this.pendingPhotoUpload = null;
+
+    if (this.photoPreviewObjectUrl) {
+      URL.revokeObjectURL(this.photoPreviewObjectUrl);
+      this.photoPreviewObjectUrl = '';
+    }
+
+    if (validationError) {
+      this.setPhotoValidationError(validationError);
+      if (this.regStudentPhoto) this.regStudentPhoto.value = '';
+      if (this.regPhotoPreview) {
+        this.regPhotoPreview.hidden = true;
+        this.regPhotoPreview.removeAttribute('src');
+      }
+      if (this.regPhotoPlaceholder) this.regPhotoPlaceholder.hidden = false;
+      if (this.regPhotoFileName) this.regPhotoFileName.textContent = 'No photo selected';
+      if (this.regPhotoHelp) this.regPhotoHelp.textContent = 'Passport-style portrait images work best on certificates.';
+      return;
+    }
+
+    this.setPhotoValidationError('');
+    this.photoPreviewObjectUrl = URL.createObjectURL(file);
+    if (this.regPhotoPreview) {
+      this.regPhotoPreview.onload = () => {
+        if (!this.regPhotoHelp) return;
+        this.regPhotoHelp.textContent = this.regPhotoPreview.naturalHeight >= this.regPhotoPreview.naturalWidth
+          ? 'Photo ready. Portrait orientation is suitable for the certificate.'
+          : 'A portrait-oriented passport photo is recommended, but this image can still be submitted.';
+      };
+      this.regPhotoPreview.onerror = () => {
+        this.setPhotoValidationError('The selected file could not be read as an image. Please choose another photo.');
+        if (this.regStudentPhoto) this.regStudentPhoto.value = '';
+        this.regPhotoPreview.hidden = true;
+        if (this.regPhotoPlaceholder) this.regPhotoPlaceholder.hidden = false;
+      };
+      this.regPhotoPreview.src = this.photoPreviewObjectUrl;
+      this.regPhotoPreview.hidden = false;
+    }
+    if (this.regPhotoPlaceholder) this.regPhotoPlaceholder.hidden = true;
+    if (this.regPhotoFileName) {
+      this.regPhotoFileName.textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+    }
+  }
+
+  setRegistrationBusy(isBusy, label = 'Submit Registration') {
+    if (!this.btnSubmitReg) return;
+    this.btnSubmitReg.disabled = isBusy;
+    this.btnSubmitReg.classList.toggle('is-loading', isBusy);
+    this.btnSubmitReg.innerHTML = isBusy
+      ? `<i class="fa-solid fa-spinner fa-spin"></i> ${escapeHtml(label)}`
+      : '<i class="fa-solid fa-paper-plane"></i> Submit Registration';
+  }
+
+  async uploadStudentPhoto(file, studentId, authCode, courseId) {
+    if (this.pendingPhotoUpload?.file === file) return this.pendingPhotoUpload.metadata;
+
+    let authResponse;
+    try {
+      authResponse = await fetch(getImageKitAuthUrl(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          academySlug: this.currentAcademySlug,
+          authCode,
+          courseId,
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size
+        })
+      });
+    } catch {
+      throw new Error('Could not connect to the photo-upload service. Please check your connection and retry.');
+    }
+    const auth = await authResponse.json().catch(() => null);
+    if (!authResponse.ok || !auth?.success) {
+      const error = new Error(auth?.error || 'Could not authorize the passport photo upload.');
+      error.code = auth?.code || 'PHOTO_AUTH_FAILED';
+      throw error;
+    }
+
+    const safeOriginalName = file.name
+      .normalize('NFKD')
+      .replace(/[^a-zA-Z0-9.-]+/g, '_')
+      .replace(/^\.+/, '')
+      .slice(-100) || 'passport-photo.jpg';
+    const uniqueFileName = `${studentId}_${Date.now()}_${safeOriginalName}`;
+    const uploadBody = new FormData();
+    uploadBody.append('file', file);
+    uploadBody.append('fileName', uniqueFileName);
+    uploadBody.append('folder', '/academy/student-photos/');
+    uploadBody.append('useUniqueFileName', 'true');
+    uploadBody.append('publicKey', auth.publicKey);
+    uploadBody.append('token', auth.token);
+    uploadBody.append('signature', auth.signature);
+    uploadBody.append('expire', String(auth.expire));
+
+    let uploadResponse;
+    try {
+      uploadResponse = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
+        method: 'POST',
+        body: uploadBody
+      });
+    } catch {
+      throw new Error('The passport photo could not reach ImageKit. Please check your connection and retry.');
+    }
+    const uploaded = await uploadResponse.json().catch(() => null);
+    const expectedUrlPrefix = String(auth.urlEndpoint || '').replace(/\/$/, '');
+    const uploadedPhotoIsValid = expectedUrlPrefix
+      && String(uploaded?.url || '').startsWith(`${expectedUrlPrefix}/`)
+      && String(uploaded?.filePath || '').startsWith('/academy/student-photos/')
+      && uploaded?.fileId;
+    if (!uploadResponse.ok || !uploadedPhotoIsValid) {
+      throw new Error(uploaded?.message || 'Passport photo upload failed. Please try again.');
+    }
+
+    const metadata = {
+      photoUrl: uploaded.url,
+      imageKitFileId: uploaded.fileId,
+      imageKitFilePath: uploaded.filePath
+    };
+    this.pendingPhotoUpload = { file, studentId, metadata };
+    return metadata;
+  }
+
   // ==========================================================================
   // Student Registration Handler
   // ==========================================================================
@@ -1284,6 +1446,7 @@ class PublicAcademyApp {
     const qualification = this.regQualificationInput.value.trim();
     const courseId = this.regCourseInput.value.trim();
     const authCode = (this.regAuthCode?.value || Array.from(this.authOtpDigits || []).map(i => i.value).join('')).trim();
+    const photoFile = this.regStudentPhoto?.files?.[0] || null;
 
     // Required validation with a precise message and focus target. Custom
     // dropdowns store their values in hidden inputs, so native browser
@@ -1299,6 +1462,7 @@ class PublicAcademyApp {
       { value: category, label: 'Category', element: this.regCategoryTrigger },
       { value: religion, label: 'Religion', element: this.regReligionTrigger },
       { value: qualification, label: 'Highest Qualification', element: this.regQualificationTrigger },
+      { value: photoFile, label: 'Student Passport Photo', element: this.regStudentPhoto },
       { value: phone, label: 'Mobile Number', element: this.regPhone },
       { value: email, label: 'Email Address', element: this.regEmail },
       { value: state, label: 'State', element: this.regStateTrigger },
@@ -1312,6 +1476,7 @@ class PublicAcademyApp {
     const missingFields = requiredFields.filter(field => !field.value);
     if (missingFields.length > 0) {
       missingFields.forEach(field => field.element?.classList.add('input-error'));
+      if (!photoFile) this.setPhotoValidationError('Please choose a student passport photo.');
       const firstMissingField = missingFields[0];
       firstMissingField.element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       window.setTimeout(() => firstMissingField.element?.focus(), 350);
@@ -1322,6 +1487,16 @@ class PublicAcademyApp {
       this.showToast(message, 'error');
       return;
     }
+
+    const photoValidationError = this.validateStudentPhoto(photoFile);
+    if (photoValidationError) {
+      this.setPhotoValidationError(photoValidationError);
+      this.regPhotoUpload?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      this.regStudentPhoto?.focus();
+      this.showToast(photoValidationError, 'error');
+      return;
+    }
+    this.setPhotoValidationError('');
 
     // Strict 12-Digit Aadhar Number Validation
     if (aadhar.length !== 12 || !/^\d{12}$/.test(aadhar)) {
@@ -1367,7 +1542,9 @@ class PublicAcademyApp {
     }
 
     // Generate Unique Student Identifier
-    const studentId = `STU-${Math.floor(1000 + Math.random() * 9000)}`;
+    const studentId = this.pendingPhotoUpload?.file === photoFile
+      ? this.pendingPhotoUpload.studentId
+      : `STU-${Math.floor(1000 + Math.random() * 9000)}`;
     const joinDate = new Date().toISOString().split('T')[0];
 
     const selectedCourse = this.courses.find(c => c.id === courseId);
@@ -1403,8 +1580,14 @@ class PublicAcademyApp {
     // The server resolves the academy exclusively from this deployment's slug,
     // validates that academy's code and expiry, and saves only after success.
     let registrationResult;
-    if (this.btnSubmitReg) this.btnSubmitReg.disabled = true;
+    let submissionStage = 'photo';
     try {
+      this.setRegistrationBusy(true, 'Uploading Passport Photo…');
+      const photoMetadata = await this.uploadStudentPhoto(photoFile, studentId, authCode, courseId);
+      Object.assign(newStudent, photoMetadata);
+
+      submissionStage = 'registration';
+      this.setRegistrationBusy(true, 'Submitting Registration…');
       const response = await fetch(getPublicApiUrl(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1420,24 +1603,33 @@ class PublicAcademyApp {
       registrationResult = await response.json().catch(() => null);
 
       if (!response.ok || !registrationResult?.success) {
-        const errorMessages = {
-          WRONG_CODE: 'Incorrect authentication code. Please check the current code from the academy.',
-          EXPIRED_CODE: 'The authentication code has expired. Please request a new code from the academy.',
-          NO_ACTIVE_CODE: 'No active authentication code is available. Please contact the academy.',
-          ACADEMY_NOT_FOUND: 'This public site is not connected to a registered academy.',
-          INVALID_COURSE: 'The selected course is no longer available. Please select another course.'
-        };
-        const message = errorMessages[registrationResult?.code] || registrationResult?.error || 'Registration could not be completed. Please try again.';
-        this.regAuthCode?.classList.add('input-error');
-        this.regAuthCode?.focus();
-        this.showToast(message, 'error');
-        return;
+        const registrationError = new Error(registrationResult?.error || 'Registration could not be completed. Please try again.');
+        registrationError.code = registrationResult?.code || 'REGISTRATION_FAILED';
+        throw registrationError;
       }
     } catch (error) {
-      this.showToast('Unable to contact the academy registration server. Please try again.', 'error');
+      const errorMessages = {
+        WRONG_CODE: 'Incorrect authentication code. Please check the current code from the academy.',
+        EXPIRED_CODE: 'The authentication code has expired. Please request a new code from the academy.',
+        NO_ACTIVE_CODE: 'No active authentication code is available. Please contact the academy.',
+        ACADEMY_NOT_FOUND: 'This public site is not connected to a registered academy.',
+        INVALID_COURSE: 'The selected course is no longer available. Please select another course.',
+        IMAGEKIT_NOT_CONFIGURED: 'Photo uploads are temporarily unavailable. Please contact the academy.',
+        INVALID_PHOTO: 'Choose a JPG, JPEG, PNG or WebP passport photo that is 2 MB or smaller.',
+        PHOTO_REQUIRED: 'A valid uploaded passport photo is required.'
+      };
+      const message = errorMessages[error?.code] || error?.message || 'Registration could not be completed. Please try again.';
+      if (['WRONG_CODE', 'EXPIRED_CODE', 'NO_ACTIVE_CODE'].includes(error?.code)) {
+        this.regAuthCode?.classList.add('input-error');
+        this.regAuthCode?.focus();
+      } else if (submissionStage === 'photo' || ['IMAGEKIT_NOT_CONFIGURED', 'INVALID_PHOTO', 'PHOTO_REQUIRED'].includes(error?.code)) {
+        this.setPhotoValidationError(message);
+        this.regPhotoUpload?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      this.showToast(message, 'error');
       return;
     } finally {
-      if (this.btnSubmitReg) this.btnSubmitReg.disabled = false;
+      this.setRegistrationBusy(false);
     }
 
     const savedStudent = registrationResult.student || newStudent;
@@ -1469,6 +1661,19 @@ class PublicAcademyApp {
 
     // Reset Form
     this.studentRegForm.reset();
+    this.pendingPhotoUpload = null;
+    if (this.photoPreviewObjectUrl) {
+      URL.revokeObjectURL(this.photoPreviewObjectUrl);
+      this.photoPreviewObjectUrl = '';
+    }
+    if (this.regPhotoPreview) {
+      this.regPhotoPreview.hidden = true;
+      this.regPhotoPreview.removeAttribute('src');
+    }
+    if (this.regPhotoPlaceholder) this.regPhotoPlaceholder.hidden = false;
+    if (this.regPhotoFileName) this.regPhotoFileName.textContent = 'No photo selected';
+    if (this.regPhotoHelp) this.regPhotoHelp.textContent = 'Passport-style portrait images work best on certificates.';
+    this.setPhotoValidationError('');
     if (this.regAadhar) this.regAadhar.classList.remove('input-error');
     if (this.regAadharError) this.regAadharError.style.display = 'none';
     this.regPhone.classList.remove('input-error');

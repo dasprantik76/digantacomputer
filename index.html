@@ -14,7 +14,7 @@
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="public-style.css?v=24.8">
+  <link rel="stylesheet" href="public-style.css?v=24.9">
   <script src="site-config.js?v=3"></script>
   <script>
     // Fast synchronous pre-hydration to eliminate any flash or delay of text
@@ -688,6 +688,27 @@
               </div>
             </div>
 
+            <!-- Required passport photo; uploaded securely to ImageKit on submit. -->
+            <div class="form-group form-col-full student-photo-field" id="regPhotoField">
+              <label for="regStudentPhoto">Student Passport Photo <span class="required-star">*</span></label>
+              <div class="student-photo-upload" id="regPhotoUpload">
+                <div class="student-photo-preview" id="regPhotoPreviewWrap" aria-hidden="true">
+                  <i class="fa-solid fa-user" id="regPhotoPlaceholder"></i>
+                  <img id="regPhotoPreview" alt="Selected student passport photo preview" hidden>
+                </div>
+                <div class="student-photo-upload-content">
+                  <strong>Upload Passport Photo</strong>
+                  <p>Use a clear, recent portrait photo. JPG, JPEG, PNG or WebP, up to 2 MB.</p>
+                  <input type="file" id="regStudentPhoto" name="studentPassportPhoto"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                    aria-describedby="regPhotoHelp regPhotoError" required>
+                  <span class="student-photo-file-name" id="regPhotoFileName">No photo selected</span>
+                </div>
+              </div>
+              <span class="student-photo-help" id="regPhotoHelp">Passport-style portrait images work best on certificates.</span>
+              <span class="input-error-msg" id="regPhotoError" role="alert"></span>
+            </div>
+
             <div class="form-section-heading form-col-full">
               <span class="form-section-number">2</span>
               <h2>Contact Details</h2>
@@ -1085,7 +1106,7 @@
 
   <!-- Public Script -->
   <script src="certificate-canvas.js?v=13"></script>
-  <script src="public-script.js?v=6.7"></script>
+  <script src="public-script.js?v=6.8"></script>
 </body>
 
 </html>
