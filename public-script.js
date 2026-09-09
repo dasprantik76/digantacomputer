@@ -10,6 +10,7 @@ const PUBLIC_API_BASE_URL = String(PUBLIC_SITE_CONFIG.apiBaseUrl || '').replace(
 const getPublicApiUrl = (query = '') => `${PUBLIC_API_BASE_URL}/api/data${query}`;
 const getImageKitAuthUrl = () => `${PUBLIC_API_BASE_URL}/api/imagekit-auth`;
 const MAX_STUDENT_PHOTO_BYTES = 2 * 1024 * 1024;
+const TARGET_STUDENT_PHOTO_BYTES = 50 * 1024;
 const ALLOWED_STUDENT_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const STORAGE_KEYS = {
@@ -1345,8 +1346,56 @@ class PublicAcademyApp {
       : '<i class="fa-solid fa-paper-plane"></i> Submit Registration';
   }
 
+  async compressStudentPhoto(file) {
+    const sourceUrl = URL.createObjectURL(file);
+    const image = new Image();
+    try {
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = () => reject(new Error('The selected passport photo could not be processed.'));
+        image.src = sourceUrl;
+      });
+
+      const longestSide = Math.max(image.naturalWidth, image.naturalHeight);
+      let scale = Math.min(1, 800 / longestSide);
+      let quality = 0.82;
+      let blob = null;
+
+      while (scale >= 0.2) {
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(160, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(160, Math.round(image.naturalHeight * scale));
+        const context = canvas.getContext('2d');
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+        blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+        if (!blob) throw new Error('The selected passport photo could not be compressed.');
+        if (blob.size <= TARGET_STUDENT_PHOTO_BYTES) break;
+
+        if (quality > 0.38) quality -= 0.08;
+        else {
+          scale *= 0.85;
+          quality = 0.7;
+        }
+      }
+
+      if (!blob || blob.size > TARGET_STUDENT_PHOTO_BYTES) {
+        throw new Error('The passport photo could not be reduced below 50 KB. Please choose another image.');
+      }
+
+      const baseName = file.name.replace(/\.[^.]+$/, '') || 'passport-photo';
+      return new File([blob], `${baseName}.jpg`, { type: 'image/jpeg', lastModified: Date.now() });
+    } finally {
+      URL.revokeObjectURL(sourceUrl);
+    }
+  }
+
   async uploadStudentPhoto(file, studentId, authCode, courseId) {
     if (this.pendingPhotoUpload?.file === file) return this.pendingPhotoUpload.metadata;
+
+    const uploadFile = await this.compressStudentPhoto(file);
 
     let authResponse;
     try {
@@ -1357,9 +1406,9 @@ class PublicAcademyApp {
           academySlug: this.currentAcademySlug,
           authCode,
           courseId,
-          fileName: file.name,
-          fileType: file.type,
-          fileSize: file.size
+          fileName: uploadFile.name,
+          fileType: uploadFile.type,
+          fileSize: uploadFile.size
         })
       });
     } catch {
@@ -1372,14 +1421,14 @@ class PublicAcademyApp {
       throw error;
     }
 
-    const safeOriginalName = file.name
+    const safeOriginalName = uploadFile.name
       .normalize('NFKD')
       .replace(/[^a-zA-Z0-9.-]+/g, '_')
       .replace(/^\.+/, '')
       .slice(-100) || 'passport-photo.jpg';
     const uniqueFileName = `${studentId}_${Date.now()}_${safeOriginalName}`;
     const uploadBody = new FormData();
-    uploadBody.append('file', file);
+    uploadBody.append('file', uploadFile);
     uploadBody.append('fileName', uniqueFileName);
     uploadBody.append('folder', '/academy/student-photos/');
     uploadBody.append('useUniqueFileName', 'true');

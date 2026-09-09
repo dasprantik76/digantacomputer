@@ -34,7 +34,7 @@ Do not copy the Admin Portal API or `MONGODB_URI` into a public project.
    server environment.
 2. Set `apiBaseUrl` in `site-config.js` to that local Vercel URL.
 3. Serve this folder from `http://localhost` and submit the registration form with a current
-   academy authentication code and a JPG, JPEG, PNG, or WebP photo no larger than 2 MB.
+   academy authentication code and a JPG, JPEG, PNG, or WebP photo no larger than 2 MB. The browser converts it to a JPEG below 50 KB before upload.
 4. Confirm the asset appears under `/academy/student-photos/` in ImageKit and the MongoDB
    student record contains `photoUrl`, `imageKitFileId`, and `imageKitFilePath`.
 
