@@ -8,6 +8,7 @@
   const download = document.getElementById('btnDownloadCertificate');
   let revision = 0;
   let filename = 'certificate';
+  const PHOTO_BOX = { x: 1525, y: 649, width: 227, height: 268 };
   function loadImage(url) {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -72,9 +73,20 @@
         try {
           const photo = await loadImage(student.photoUrl);
           if (current !== revision) return;
-          const scale = Math.max(228 / photo.width, 264 / photo.height);
-          const sw = 228 / scale, sh = 264 / scale;
-          ctx.drawImage(photo, (photo.width - sw) / 2, (photo.height - sh) / 2, sw, sh, 1524, 650, 228, 264);
+          const scale = Math.max(PHOTO_BOX.width / photo.width, PHOTO_BOX.height / photo.height);
+          const sw = PHOTO_BOX.width / scale;
+          const sh = PHOTO_BOX.height / scale;
+          ctx.drawImage(
+            photo,
+            (photo.width - sw) / 2,
+            Math.max(0, (photo.height - sh) * 0.3),
+            sw,
+            sh,
+            PHOTO_BOX.x,
+            PHOTO_BOX.y,
+            PHOTO_BOX.width,
+            PHOTO_BOX.height
+          );
         } catch { photoFailed = true; }
       }
       if (current !== revision) return;
