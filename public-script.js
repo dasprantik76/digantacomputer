@@ -1780,7 +1780,7 @@ class PublicAcademyApp {
     localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(allStudents));
 
     // Display Success Receipt Dialog
-    if (this.modalStudentId) this.modalStudentId.textContent = studentId;
+    if (this.modalStudentId) this.modalStudentId.textContent = savedStudent.id;
     if (this.modalStudentName) this.modalStudentName.textContent = fullName;
     if (this.modalCourseName) this.modalCourseName.textContent = courseTitle;
     if (this.modalRegDate) this.modalRegDate.textContent = joinDate;
