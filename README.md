@@ -8,15 +8,14 @@ Edit `site-config.js`:
 
 ```js
 window.PUBLIC_SITE_CONFIG = Object.freeze({
-  academySlug: 'academy-slug-from-admin',
-  apiBaseUrl: 'https://your-admin-portal.vercel.app',
-  adminPortalUrl: 'https://your-admin-portal.vercel.app'
+  academySlug: 'prantik',
+  apiBaseUrl: 'https://academy.pixelsetu.com',
+  adminPortalUrl: 'https://academy.pixelsetu.com'
 });
 ```
 
-- `academySlug` must match the slug saved for that owner in the Admin Portal.
-- `apiBaseUrl` is the central Admin Portal deployment, without a trailing slash.
-- `adminPortalUrl` is where the Admin Login buttons should open.
+- Public website: `https://diganta.pixelsetu.com`
+- Admin portal and API: `https://academy.pixelsetu.com`
 
 ## Deploy
 

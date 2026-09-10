@@ -77,7 +77,7 @@ class PublicAcademyApp {
     this.courses = [];
     this.academyProfile = null;
 
-    // Resolve tenant from Subdomain (e.g. prantik.prantikphotography.com) or URL Query (?academy=prantik)
+    // This public deployment is dedicated to the configured Diganta academy.
     this.currentAcademySlug = this.resolveTenant();
     this.currentOwnerEmail = this.currentAcademySlug.includes('poulami') ? 'poulami.13thmay@gmail.com' : 'dasprantik76@gmail.com';
 
@@ -125,46 +125,11 @@ class PublicAcademyApp {
   }
 
   resolveTenant() {
-    if (PUBLIC_SITE_CONFIG.academySlug) {
-      return String(PUBLIC_SITE_CONFIG.academySlug).toLowerCase().trim();
-    }
-
-    const hostname = window.location.hostname.toLowerCase();
-
-    // If accessing academy.XXXX directly on root, route to Admin Gateway
-    if (hostname.startsWith('academy.')) {
-      window.location.href = PUBLIC_SITE_CONFIG.adminPortalUrl || '#';
-      return 'prantik';
-    }
-
-    // 1. Check Subdomain (e.g. prantik.prantikphotography.com or poulami.prantikphotography.com)
-    const parts = hostname.split('.');
-    if (parts.length >= 3 || (parts.length === 2 && parts[1] === 'localhost')) {
-      const subdomain = parts[0];
-      if (subdomain !== 'www' && subdomain !== 'academy' && subdomain !== 'app') {
-        return subdomain;
-      }
-    }
-
-    // 2. Check Query Parameters (?academy=prantik or ?academy=poulami)
-    const urlParams = new URLSearchParams(window.location.search);
-    const queryParam = urlParams.get('academy') || urlParams.get('owner');
-    if (queryParam) {
-      return queryParam.toLowerCase().trim();
-    }
-
-    return 'prantik'; // Default fallback
+    return String(PUBLIC_SITE_CONFIG.academySlug || 'prantik').toLowerCase().trim();
   }
 
   updateAdminLoginLinks() {
-    const hostname = window.location.hostname.toLowerCase();
-    const parts = hostname.split('.');
-    let adminUrl = PUBLIC_SITE_CONFIG.adminPortalUrl || '#';
-
-    if (!PUBLIC_SITE_CONFIG.adminPortalUrl && parts.length >= 2 && !hostname.includes('localhost') && !hostname.endsWith('.vercel.app')) {
-      const rootDomain = parts.slice(-2).join('.');
-      adminUrl = `https://academy.${rootDomain}`;
-    }
+    const adminUrl = PUBLIC_SITE_CONFIG.adminPortalUrl || 'https://academy.pixelsetu.com';
 
     const btnNav = document.getElementById('btnNavAdminLogin');
     if (btnNav) btnNav.href = adminUrl;
