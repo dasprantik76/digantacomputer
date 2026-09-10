@@ -1003,12 +1003,11 @@ class PublicAcademyApp {
       });
       const result = await response.json().catch(() => null);
       if (String(this.regPinCode?.value || '') !== pinCode) return;
-      if (!response.ok || !result?.success || !Array.isArray(result.areas) || result.areas.length === 0) {
+      if (!response.ok || !result?.success || !result?.area) {
         this.clearPinArea('No area was found for this PIN code.', 'error');
         return;
       }
-      const areaLabel = result.areas.length === 1 ? 'Area' : 'Areas';
-      this.clearPinArea(`${areaLabel}: ${result.areas.join(', ')}`);
+      this.clearPinArea(`Area: ${result.area}`);
     } catch (error) {
       if (error?.name !== 'AbortError' && String(this.regPinCode?.value || '') === pinCode) {
         this.clearPinArea('Area lookup is temporarily unavailable.', 'error');
