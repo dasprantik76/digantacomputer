@@ -1459,80 +1459,31 @@ textarea {
 }
 
 .student-photo-upload {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  min-height: 150px;
-  padding: 1.25rem;
-  background: #f8fafc;
-  border: 2px dashed #94a3b8;
-  border-radius: var(--radius-lg);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
-}
-
-.student-photo-upload:hover,
-.student-photo-upload:focus-within {
-  background: #ffffff;
-  border-color: #477496;
-  box-shadow: 0 0 0 4px rgba(46, 85, 121, 0.1);
-}
-
-.student-photo-upload.input-error {
-  border-color: var(--rose);
-  background: #fff7f7;
-}
-
-.student-photo-preview {
-  width: 100px;
-  height: 125px;
-  flex: 0 0 100px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  color: #64748b;
-  background: #e2e8f0;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-}
-
-.student-photo-preview i {
-  font-size: 2.5rem;
-}
-
-.student-photo-preview img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.student-photo-upload-content {
-  min-width: 0;
-  flex: 1;
-}
-
-.student-photo-upload-content strong {
-  display: block;
-  margin-bottom: 0.25rem;
-  color: #173044;
-  font-size: 1rem;
-}
-
-.student-photo-upload-content p,
-.student-photo-help {
-  color: #64748b;
-  font-size: 0.8125rem;
-  line-height: 1.5;
 }
 
 #studentRegForm .student-photo-upload input[type="file"] {
   width: 100%;
-  margin-top: 0.8rem;
-  padding: 0.45rem;
+  min-height: 54px;
+  padding: 0.42rem;
   color: #334155;
   background: #ffffff;
-  border: 1px solid #94a3b8;
-  border-radius: 8px;
+  border: 2px solid #94a3b8;
+  border-radius: var(--radius-md);
   cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+#studentRegForm .student-photo-upload input[type="file"]:hover,
+#studentRegForm .student-photo-upload input[type="file"]:focus {
+  border-color: #477496;
+  box-shadow: 0 0 0 4px rgba(46, 85, 121, 0.1);
+  outline: none;
+}
+
+.student-photo-upload.input-error input[type="file"] {
+  border-color: var(--rose) !important;
+  background: #fff7f7 !important;
 }
 
 #studentRegForm .student-photo-upload input[type="file"]::file-selector-button {
@@ -1547,29 +1498,18 @@ textarea {
   cursor: pointer;
 }
 
-.student-photo-file-name {
-  display: block;
-  overflow: hidden;
-  margin-top: 0.5rem;
-  color: #475569;
-  font-size: 0.78rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .student-photo-help {
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-top: 0.45rem;
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 .btn-submit-reg.is-loading {
   cursor: wait;
-}
-
-@media (max-width: 520px) {
-  .student-photo-upload {
-    align-items: flex-start;
-    flex-direction: column;
-  }
 }
 
 #studentRegForm .input-icon-wrap input:hover,

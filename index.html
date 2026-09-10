@@ -14,7 +14,7 @@
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="public-style.css?v=24.9">
+  <link rel="stylesheet" href="public-style.css?v=25.0">
   <script src="site-config.js?v=5"></script>
   <script>
     // Fast synchronous pre-hydration to eliminate any flash or delay of text
@@ -692,20 +692,11 @@
             <div class="form-group form-col-full student-photo-field" id="regPhotoField">
               <label for="regStudentPhoto">Student Passport Photo <span class="required-star">*</span></label>
               <div class="student-photo-upload" id="regPhotoUpload">
-                <div class="student-photo-preview" id="regPhotoPreviewWrap" aria-hidden="true">
-                  <i class="fa-solid fa-user" id="regPhotoPlaceholder"></i>
-                  <img id="regPhotoPreview" alt="Selected student passport photo preview" hidden>
-                </div>
-                <div class="student-photo-upload-content">
-                  <strong>Upload Passport Photo</strong>
-                  <p>Use a clear, recent portrait photo. JPG, JPEG, PNG or WebP, up to 2 MB. It will be compressed below 50 KB.</p>
-                  <input type="file" id="regStudentPhoto" name="studentPassportPhoto"
-                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-                    aria-describedby="regPhotoHelp regPhotoError" required>
-                  <span class="student-photo-file-name" id="regPhotoFileName">No photo selected</span>
-                </div>
+                <input type="file" id="regStudentPhoto" name="studentPassportPhoto"
+                  accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                  aria-describedby="regPhotoHelp regPhotoError" required>
               </div>
-              <span class="student-photo-help" id="regPhotoHelp">Passport-style portrait images work best on certificates.</span>
+              <span class="student-photo-help" id="regPhotoHelp"><i class="fa-solid fa-circle-info"></i> Please note, this photo will be printed on your certificate, after completion of your course. JPG, JPEG, PNG or WebP; maximum 2 MB.</span>
               <span class="input-error-msg" id="regPhotoError" role="alert"></span>
             </div>
 
@@ -1107,7 +1098,7 @@
   <!-- Public Script -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
   <script src="certificate-canvas.js?v=16"></script>
-  <script src="public-script.js?v=7.0"></script>
+  <script src="public-script.js?v=7.1"></script>
 </body>
 
 </html>

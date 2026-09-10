@@ -272,10 +272,6 @@ class PublicAcademyApp {
     this.regAddress = document.getElementById('regAddress');
     this.regStudentPhoto = document.getElementById('regStudentPhoto');
     this.regPhotoUpload = document.getElementById('regPhotoUpload');
-    this.regPhotoPreview = document.getElementById('regPhotoPreview');
-    this.regPhotoPlaceholder = document.getElementById('regPhotoPlaceholder');
-    this.regPhotoFileName = document.getElementById('regPhotoFileName');
-    this.regPhotoHelp = document.getElementById('regPhotoHelp');
     this.regPhotoError = document.getElementById('regPhotoError');
     this.regAuthCode = document.getElementById('regAuthCode');
     this.authOtpBoxes = document.getElementById('authOtpBoxes');
@@ -1336,46 +1332,13 @@ class PublicAcademyApp {
     const validationError = this.validateStudentPhoto(file);
     this.pendingPhotoUpload = null;
 
-    if (this.photoPreviewObjectUrl) {
-      URL.revokeObjectURL(this.photoPreviewObjectUrl);
-      this.photoPreviewObjectUrl = '';
-    }
-
     if (validationError) {
       this.setPhotoValidationError(validationError);
       if (this.regStudentPhoto) this.regStudentPhoto.value = '';
-      if (this.regPhotoPreview) {
-        this.regPhotoPreview.hidden = true;
-        this.regPhotoPreview.removeAttribute('src');
-      }
-      if (this.regPhotoPlaceholder) this.regPhotoPlaceholder.hidden = false;
-      if (this.regPhotoFileName) this.regPhotoFileName.textContent = 'No photo selected';
-      if (this.regPhotoHelp) this.regPhotoHelp.textContent = 'Passport-style portrait images work best on certificates.';
       return;
     }
 
     this.setPhotoValidationError('');
-    this.photoPreviewObjectUrl = URL.createObjectURL(file);
-    if (this.regPhotoPreview) {
-      this.regPhotoPreview.onload = () => {
-        if (!this.regPhotoHelp) return;
-        this.regPhotoHelp.textContent = this.regPhotoPreview.naturalHeight >= this.regPhotoPreview.naturalWidth
-          ? 'Photo ready. Portrait orientation is suitable for the certificate.'
-          : 'A portrait-oriented passport photo is recommended, but this image can still be submitted.';
-      };
-      this.regPhotoPreview.onerror = () => {
-        this.setPhotoValidationError('The selected file could not be read as an image. Please choose another photo.');
-        if (this.regStudentPhoto) this.regStudentPhoto.value = '';
-        this.regPhotoPreview.hidden = true;
-        if (this.regPhotoPlaceholder) this.regPhotoPlaceholder.hidden = false;
-      };
-      this.regPhotoPreview.src = this.photoPreviewObjectUrl;
-      this.regPhotoPreview.hidden = false;
-    }
-    if (this.regPhotoPlaceholder) this.regPhotoPlaceholder.hidden = true;
-    if (this.regPhotoFileName) {
-      this.regPhotoFileName.textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)} MB`;
-    }
   }
 
   setRegistrationBusy(isBusy, label = 'Submit Registration') {
@@ -1752,17 +1715,6 @@ class PublicAcademyApp {
     // Reset Form
     this.studentRegForm.reset();
     this.pendingPhotoUpload = null;
-    if (this.photoPreviewObjectUrl) {
-      URL.revokeObjectURL(this.photoPreviewObjectUrl);
-      this.photoPreviewObjectUrl = '';
-    }
-    if (this.regPhotoPreview) {
-      this.regPhotoPreview.hidden = true;
-      this.regPhotoPreview.removeAttribute('src');
-    }
-    if (this.regPhotoPlaceholder) this.regPhotoPlaceholder.hidden = false;
-    if (this.regPhotoFileName) this.regPhotoFileName.textContent = 'No photo selected';
-    if (this.regPhotoHelp) this.regPhotoHelp.textContent = 'Passport-style portrait images work best on certificates.';
     this.setPhotoValidationError('');
     if (this.regAadhar) this.regAadhar.classList.remove('input-error');
     if (this.regAadharError) this.regAadharError.style.display = 'none';
