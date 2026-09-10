@@ -9,6 +9,7 @@
   let revision = 0;
   let filename = 'certificate';
   const PHOTO_BOX = { x: 1525, y: 649, width: 227, height: 268 };
+  const QR_BOX = { x: 390, y: 1058, size: 124 };
   function loadImage(url) {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -88,6 +89,24 @@
             PHOTO_BOX.height
           );
         } catch { photoFailed = true; }
+      }
+      if (window.QRious && student.id) {
+        const verificationUrl = new URL(window.location.origin + window.location.pathname);
+        verificationUrl.searchParams.set('certificate', student.id);
+        verificationUrl.searchParams.set('academy', student.academySlug || window.PUBLIC_SITE_CONFIG?.academySlug || 'prantik');
+        verificationUrl.hash = 'certificate';
+        const qrCanvas = document.createElement('canvas');
+        new window.QRious({
+          element: qrCanvas,
+          value: verificationUrl.href,
+          size: 512,
+          level: 'H',
+          foreground: '#111111',
+          background: '#ffffff'
+        });
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(QR_BOX.x - 5, QR_BOX.y - 5, QR_BOX.size + 10, QR_BOX.size + 10);
+        ctx.drawImage(qrCanvas, QR_BOX.x, QR_BOX.y, QR_BOX.size, QR_BOX.size);
       }
       if (current !== revision) return;
       canvas.setAttribute('aria-label', `Completion certificate for ${student.name || student.fullName}, ${course?.title || ''}, student ID ${student.id || ''}`);

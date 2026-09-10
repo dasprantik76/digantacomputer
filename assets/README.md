@@ -4,6 +4,7 @@ and served from this website to avoid cross-origin image-loading failures.
 Source: https://ik.imagekit.io/d3ycnoiwd/academy/student-certificate/diganta-certificate-template.jpg
 
 The canvas leaves the certificate background unchanged and overlays `student.photoUrl` when present.
+It also replaces the printed QR placeholder with a QR code unique to the student record. Scanning it opens the public certificate page and validates the record against the academy database.
 The printed QR code remains part of the background; it is not a student-specific verification QR.
 Keep this Diganta-branded template only on the appropriate academy deployment.
 

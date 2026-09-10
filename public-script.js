@@ -471,6 +471,7 @@ class PublicAcademyApp {
 
         if (Array.isArray(students)) {
           localStorage.setItem(this.getStorageKey(STORAGE_KEYS.STUDENTS), JSON.stringify(students));
+          await this.openCertificateFromVerificationLink(students);
         }
 
         // Remove tenantGuard if it was an unverified custom subdomain
@@ -485,6 +486,46 @@ class PublicAcademyApp {
       console.error('[PublicApp] fetchCloudData error:', e);
     }
     return false;
+  }
+
+  async openCertificateFromVerificationLink(students) {
+    if (this._verificationLinkHandled) return;
+    const certificateId = new URLSearchParams(window.location.search).get('certificate');
+    if (!certificateId) return;
+    this._verificationLinkHandled = true;
+    this.switchView('certificate', false);
+
+    const student = students.find(item => String(item.id) === certificateId);
+    if (!student) {
+      if (this.certResultContainer) this.certResultContainer.style.display = 'none';
+      if (this.certNotFoundState) this.certNotFoundState.style.display = 'flex';
+      return;
+    }
+    await this.showCertificateResult(student);
+  }
+
+  async showCertificateResult(student) {
+    if (student.status !== 'Completed') {
+      if (this.certResultContainer) this.certResultContainer.style.display = 'none';
+      if (this.certNotFoundState) this.certNotFoundState.style.display = 'none';
+      if (this.certIncompleteState) {
+        if (this.certIncompleteDesc) {
+          this.certIncompleteDesc.textContent = `Hello, ${toTitleCase(student.name)}, your certificate is not available at this moment.`;
+        }
+        this.certIncompleteState.style.display = 'flex';
+      }
+      return;
+    }
+
+    if (this.certNotFoundState) this.certNotFoundState.style.display = 'none';
+    if (this.certIncompleteState) this.certIncompleteState.style.display = 'none';
+    const courseId = (student.enrolledCourseIds && student.enrolledCourseIds[0]) || '';
+    const course = this.courses.find(item => item.id === courseId);
+    await window.CertificateCanvas.render(student, course);
+    if (this.certResultContainer) {
+      this.certResultContainer.style.display = 'block';
+      this.certResultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
   showBrowserDefaultNotFound() {
@@ -1840,32 +1881,7 @@ class PublicAcademyApp {
       return;
     }
 
-    // Check if student's course status is Completed
-    if (student.status !== 'Completed') {
-      if (this.certResultContainer) this.certResultContainer.style.display = 'none';
-      if (this.certNotFoundState) this.certNotFoundState.style.display = 'none';
-      if (this.certIncompleteState) {
-        if (this.certIncompleteDesc) {
-          this.certIncompleteDesc.textContent = `Hello, ${toTitleCase(student.name)}, your certificate is not available at this moment.`;
-        }
-        this.certIncompleteState.style.display = 'flex';
-        this.certIncompleteState.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      return;
-    }
-
-    // Student found & Completed! Hide alerts and populate Certificate Document
-    if (this.certNotFoundState) this.certNotFoundState.style.display = 'none';
-    if (this.certIncompleteState) this.certIncompleteState.style.display = 'none';
-
-    const courseId = (student.enrolledCourseIds && student.enrolledCourseIds[0]) || '';
-    const course = this.courses.find(c => c.id === courseId);
-    await window.CertificateCanvas.render(student, course);
-
-    if (this.certResultContainer) {
-      this.certResultContainer.style.display = 'block';
-      this.certResultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    await this.showCertificateResult(student);
 
     this.showToast(`Certificate verified for ${toTitleCase(student.name)}!`, 'success');
   }
