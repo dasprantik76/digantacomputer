@@ -2053,7 +2053,7 @@ class PublicAcademyApp {
     }
   }
 
-  handleContactMessage(event) {
+  async handleContactMessage(event) {
     event.preventDefault();
 
     const form = event.currentTarget;
@@ -2067,17 +2067,42 @@ class PublicAcademyApp {
       return;
     }
 
-    const whatsappMessage = [
-      'Hello Diganta Computer Centre,',
-      '',
-      `Name: ${name}`,
-      `Mobile: ${phone}`,
-      course ? `Interested in: ${course}` : '',
-      `Message: ${message}`
-    ].filter(Boolean).join('\n');
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalButtonHtml = submitButton?.innerHTML || '<span>Send Message</span>';
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.setAttribute('aria-busy', 'true');
+      submitButton.innerHTML = '<span class="registration-spinner" aria-hidden="true"></span>';
+    }
 
-    window.open(`https://wa.me/919733894742?text=${encodeURIComponent(whatsappMessage)}`, '_blank', 'noopener,noreferrer');
-    this.showToast('Your message is ready to send on WhatsApp.', 'success');
+    try {
+      const response = await fetch(getPublicApiUrl(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'submit_contact_message',
+          payload: {
+            academySlug: this.currentAcademySlug,
+            name,
+            phone,
+            course,
+            message
+          }
+        })
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.success) throw new Error(result?.error || 'Your message could not be sent.');
+      form.reset();
+      this.showToast('Your message has been sent successfully.', 'success');
+    } catch (error) {
+      this.showToast(error.message || 'Your message could not be sent. Please try again.', 'error');
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.setAttribute('aria-busy', 'false');
+        submitButton.innerHTML = originalButtonHtml;
+      }
+    }
   }
 
   showToast(message, type = 'error') {
