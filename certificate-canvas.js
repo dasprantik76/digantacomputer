@@ -88,6 +88,16 @@
             PHOTO_BOX.width,
             PHOTO_BOX.height
           );
+          ctx.save();
+          ctx.strokeStyle = '#168bbb';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(
+            PHOTO_BOX.x + 1.5,
+            PHOTO_BOX.y + 1.5,
+            PHOTO_BOX.width - 3,
+            PHOTO_BOX.height - 3
+          );
+          ctx.restore();
         } catch { photoFailed = true; }
       }
       if (window.QRious && student.id) {
