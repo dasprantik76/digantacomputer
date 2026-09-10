@@ -66,7 +66,10 @@
       field(student.fatherName, 442, 704, 514);
       field(course?.title, 355, 765, 1055);
       field(course?.duration, 583, 901, 326);
-      const period = [monthYear(student.joinDate), monthYear(student.completionDate)].filter(Boolean).join(' - ');
+      const period = [
+        monthYear(student.certificateCourseStartDate),
+        monthYear(student.certificateCourseEndDate)
+      ].filter(Boolean).join(' - ');
       field(period, 1007, 901, 437, 33);
       field(student.grade, 706, 962, 252);
       let photoFailed = false;
