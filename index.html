@@ -726,8 +726,10 @@
               <label for="regEmail">Email Address <span class="required-star">*</span></label>
               <div class="input-icon-wrap">
                 <i class="fa-solid fa-envelope"></i>
-                <input type="email" id="regEmail" placeholder="student@example.com" required>
+                <input type="email" id="regEmail" maxlength="254" autocomplete="email"
+                  placeholder="student@example.com" required>
               </div>
+              <span class="input-error-msg" id="regEmailError">Please enter a valid email address.</span>
             </div>
 
             <div class="form-section-heading form-col-full">
@@ -1105,7 +1107,7 @@
   <!-- Public Script -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
   <script src="certificate-canvas.js?v=16"></script>
-  <script src="public-script.js?v=7.7"></script>
+  <script src="public-script.js?v=7.8"></script>
 </body>
 
 </html>

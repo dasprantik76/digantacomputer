@@ -10,6 +10,7 @@ const PUBLIC_API_BASE_URL = String(PUBLIC_SITE_CONFIG.apiBaseUrl || '').replace(
 const getPublicApiUrl = (query = '') => `${PUBLIC_API_BASE_URL}/api/data${query}`;
 const getImageKitAuthUrl = () => `${PUBLIC_API_BASE_URL}/api/imagekit-auth`;
 const getPinCodeLookupUrl = pinCode => `${PUBLIC_API_BASE_URL}/api/pincode?pincode=${encodeURIComponent(pinCode)}`;
+const getEmailValidationUrl = email => `${PUBLIC_API_BASE_URL}/api/validate-email?email=${encodeURIComponent(email)}`;
 const MAX_STUDENT_PHOTO_BYTES = 2 * 1024 * 1024;
 const TARGET_STUDENT_PHOTO_BYTES = 50 * 1024;
 const ALLOWED_STUDENT_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -268,6 +269,7 @@ class PublicAcademyApp {
     this.regPhone = document.getElementById('regPhone');
     this.regPhoneError = document.getElementById('regPhoneError');
     this.regEmail = document.getElementById('regEmail');
+    this.regEmailError = document.getElementById('regEmailError');
     this.regPinCode = document.getElementById('regPinCode');
     this.regPinCodeError = document.getElementById('regPinCodeError');
     this.regPinArea = document.getElementById('regPinArea');
@@ -740,6 +742,12 @@ class PublicAcademyApp {
     // Strict 10-digit number only validation for Mobile Numbers
     if (this.regPhone) {
       setupPhoneInputValidation(this.regPhone, this.regPhoneError);
+    }
+    if (this.regEmail) {
+      this.regEmail.addEventListener('input', () => {
+        this.regEmail.classList.remove('input-error');
+        if (this.regEmailError) this.regEmailError.style.display = 'none';
+      });
     }
     if (this.certPhone) {
       setupPhoneInputValidation(this.certPhone, this.certPhoneError);
@@ -1654,6 +1662,17 @@ class PublicAcademyApp {
       return;
     }
 
+    if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,63}$/i.test(email)) {
+      this.regEmail.classList.add('input-error');
+      if (this.regEmailError) {
+        this.regEmailError.textContent = 'Enter a valid email address, for example name@example.com.';
+        this.regEmailError.style.display = 'block';
+      }
+      this.regEmail.focus();
+      this.showToast('Please enter a valid email address.', 'error');
+      return;
+    }
+
     // Strict 6-Digit PIN Code Validation
     if (pinCode.length !== 6 || !/^\d{6}$/.test(pinCode)) {
       if (this.regPinCode) this.regPinCode.classList.add('input-error');
@@ -1670,6 +1689,32 @@ class PublicAcademyApp {
       this.regAuthCode?.classList.add('input-error');
       this.regAuthCode?.focus();
       this.showToast('Authentication code must be exactly 6 digits.', 'error');
+      return;
+    }
+
+    this.setRegistrationBusy(true);
+    try {
+      const emailCheckResponse = await fetch(getEmailValidationUrl(email), { cache: 'no-store' });
+      const emailCheck = await emailCheckResponse.json().catch(() => null);
+      if (!emailCheckResponse.ok || !emailCheck?.valid) {
+        this.setRegistrationBusy(false);
+        this.regEmail.classList.add('input-error');
+        if (this.regEmailError) {
+          this.regEmailError.textContent = emailCheck?.error || 'This email domain does not appear to accept email.';
+          this.regEmailError.style.display = 'block';
+        }
+        this.regEmail.focus();
+        this.showToast('Please check the email address and try again.', 'error');
+        return;
+      }
+    } catch {
+      this.setRegistrationBusy(false);
+      this.regEmail.classList.add('input-error');
+      if (this.regEmailError) {
+        this.regEmailError.textContent = 'The email address could not be verified. Please try again.';
+        this.regEmailError.style.display = 'block';
+      }
+      this.showToast('Email verification is temporarily unavailable.', 'error');
       return;
     }
 
