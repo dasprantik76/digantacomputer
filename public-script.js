@@ -2133,7 +2133,7 @@ function setupAadharInputValidation(aadharInput, errorElement) {
   aadharInput.addEventListener('input', (e) => {
     let val = e.target.value.replace(/\D/g, '');
     if (val.length > 12) val = val.slice(0, 12);
-    aadharInput.value = (val.match(/.{1,4}/g) || []).join('  ');
+    aadharInput.value = val;
 
     if (val.length > 0 && val.length < 12) {
       aadharInput.classList.add('input-error');
