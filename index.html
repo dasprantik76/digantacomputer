@@ -573,8 +573,8 @@
               <label for="regAadhar">Aadhar Number <span class="required-star">*</span></label>
               <div class="input-icon-wrap">
                 <i class="fa-solid fa-id-card"></i>
-                <input type="text" id="regAadhar" maxlength="12" pattern="[0-9]{12}" inputmode="numeric"
-                  placeholder="12-digit Aadhar number" required>
+                <input type="text" id="regAadhar" maxlength="16" pattern="[0-9]{4}  [0-9]{4}  [0-9]{4}" inputmode="numeric"
+                  placeholder="1234  5678  9012" required>
               </div>
               <span class="input-error-msg" id="regAadharError">Please enter a valid 12-digit Aadhar number.</span>
             </div>
@@ -1104,7 +1104,7 @@
   <!-- Public Script -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
   <script src="certificate-canvas.js?v=16"></script>
-  <script src="public-script.js?v=7.4"></script>
+  <script src="public-script.js?v=7.5"></script>
 </body>
 
 </html>
