@@ -9,6 +9,7 @@ const PUBLIC_SITE_CONFIG = window.PUBLIC_SITE_CONFIG || {};
 const PUBLIC_API_BASE_URL = String(PUBLIC_SITE_CONFIG.apiBaseUrl || '').replace(/\/$/, '');
 const getPublicApiUrl = (query = '') => `${PUBLIC_API_BASE_URL}/api/data${query}`;
 const getImageKitAuthUrl = () => `${PUBLIC_API_BASE_URL}/api/imagekit-auth`;
+const getPinCodeLookupUrl = pinCode => `${PUBLIC_API_BASE_URL}/api/pincode?pincode=${encodeURIComponent(pinCode)}`;
 const MAX_STUDENT_PHOTO_BYTES = 2 * 1024 * 1024;
 const TARGET_STUDENT_PHOTO_BYTES = 50 * 1024;
 const ALLOWED_STUDENT_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -269,9 +270,11 @@ class PublicAcademyApp {
     this.regEmail = document.getElementById('regEmail');
     this.regPinCode = document.getElementById('regPinCode');
     this.regPinCodeError = document.getElementById('regPinCodeError');
+    this.regPinArea = document.getElementById('regPinArea');
     this.regAddress = document.getElementById('regAddress');
     this.regStudentPhoto = document.getElementById('regStudentPhoto');
     this.regPhotoUpload = document.getElementById('regPhotoUpload');
+    this.btnClearStudentPhoto = document.getElementById('btnClearStudentPhoto');
     this.regPhotoError = document.getElementById('regPhotoError');
     this.regAuthCode = document.getElementById('regAuthCode');
     this.authOtpBoxes = document.getElementById('authOtpBoxes');
@@ -682,6 +685,9 @@ class PublicAcademyApp {
     if (this.regStudentPhoto) {
       this.regStudentPhoto.addEventListener('change', () => this.handleStudentPhotoSelection());
     }
+    if (this.btnClearStudentPhoto) {
+      this.btnClearStudentPhoto.addEventListener('click', () => this.clearStudentPhoto());
+    }
 
     // Certificate Search Form Submit Handler
     if (this.certSearchForm) {
@@ -747,6 +753,7 @@ class PublicAcademyApp {
     // 6-digit Pin code validation
     if (this.regPinCode) {
       setupPinCodeInputValidation(this.regPinCode, this.regPinCodeError);
+      this.regPinCode.addEventListener('input', () => this.schedulePinCodeLookup());
     }
 
     // Date inputs has-value styling
@@ -939,6 +946,7 @@ class PublicAcademyApp {
       this.regStateInput,
       (selectedState) => {
         this.populateDistricts(selectedState);
+        this.setLocationFieldsEnabled(Boolean(selectedState));
       }
     );
 
@@ -949,6 +957,63 @@ class PublicAcademyApp {
       this.regDistrictDisplay,
       this.regDistrictInput
     );
+
+    this.setLocationFieldsEnabled(Boolean(this.regStateInput?.value));
+  }
+
+  setLocationFieldsEnabled(enabled) {
+    if (this.regDistrictTrigger) this.regDistrictTrigger.disabled = !enabled;
+    if (this.regPinCode) {
+      this.regPinCode.disabled = !enabled;
+      this.regPinCode.placeholder = enabled ? '6-digit pin code' : 'Select a state first';
+      this.regPinCode.value = '';
+    }
+    if (this.regDistrictInput) this.regDistrictInput.value = '';
+    if (this.regDistrictDisplay) this.regDistrictDisplay.textContent = 'Select District';
+    this.regDistrictDropdown?.classList.remove('has-value', 'open');
+    this.clearPinArea();
+  }
+
+  clearPinArea(message = '', state = '') {
+    if (!this.regPinArea) return;
+    this.regPinArea.textContent = message;
+    this.regPinArea.classList.toggle('visible', Boolean(message));
+    this.regPinArea.classList.toggle('loading', state === 'loading');
+    this.regPinArea.classList.toggle('error', state === 'error');
+  }
+
+  schedulePinCodeLookup() {
+    clearTimeout(this._pinLookupTimer);
+    this._pinLookupController?.abort();
+    const pinCode = String(this.regPinCode?.value || '').replace(/\D/g, '');
+    if (pinCode.length !== 6) {
+      this.clearPinArea();
+      return;
+    }
+    this.clearPinArea('Finding area…', 'loading');
+    this._pinLookupTimer = setTimeout(() => this.lookupPinCodeArea(pinCode), 350);
+  }
+
+  async lookupPinCodeArea(pinCode) {
+    this._pinLookupController = new AbortController();
+    try {
+      const response = await fetch(getPinCodeLookupUrl(pinCode), {
+        cache: 'no-store',
+        signal: this._pinLookupController.signal
+      });
+      const result = await response.json().catch(() => null);
+      if (String(this.regPinCode?.value || '') !== pinCode) return;
+      if (!response.ok || !result?.success || !Array.isArray(result.areas) || result.areas.length === 0) {
+        this.clearPinArea('No area was found for this PIN code.', 'error');
+        return;
+      }
+      const areaLabel = result.areas.length === 1 ? 'Area' : 'Areas';
+      this.clearPinArea(`${areaLabel}: ${result.areas.join(', ')}`);
+    } catch (error) {
+      if (error?.name !== 'AbortError' && String(this.regPinCode?.value || '') === pinCode) {
+        this.clearPinArea('Area lookup is temporarily unavailable.', 'error');
+      }
+    }
   }
 
   populateDistricts(selectedState) {
@@ -980,6 +1045,7 @@ class PublicAcademyApp {
     trig.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
+      if (trig.disabled) return;
       // Close other dropdowns first
       const allDropdowns = [
         this.regGenderDropdown, this.regMaritalStatusDropdown, this.regCategoryDropdown,
@@ -1335,10 +1401,22 @@ class PublicAcademyApp {
     if (validationError) {
       this.setPhotoValidationError(validationError);
       if (this.regStudentPhoto) this.regStudentPhoto.value = '';
+      if (this.btnClearStudentPhoto) this.btnClearStudentPhoto.hidden = true;
       return;
     }
 
     this.setPhotoValidationError('');
+    if (this.btnClearStudentPhoto) this.btnClearStudentPhoto.hidden = false;
+  }
+
+  clearStudentPhoto() {
+    if (this.regStudentPhoto) {
+      this.regStudentPhoto.value = '';
+      this.regStudentPhoto.focus();
+    }
+    this.pendingPhotoUpload = null;
+    this.setPhotoValidationError('');
+    if (this.btnClearStudentPhoto) this.btnClearStudentPhoto.hidden = true;
   }
 
   setRegistrationBusy(isBusy, label = 'Submit Registration') {
@@ -1715,6 +1793,7 @@ class PublicAcademyApp {
     // Reset Form
     this.studentRegForm.reset();
     this.pendingPhotoUpload = null;
+    if (this.btnClearStudentPhoto) this.btnClearStudentPhoto.hidden = true;
     this.setPhotoValidationError('');
     if (this.regAadhar) this.regAadhar.classList.remove('input-error');
     if (this.regAadharError) this.regAadharError.style.display = 'none';
@@ -1744,6 +1823,7 @@ class PublicAcademyApp {
     if (this.regReligionInput) this.regReligionInput.value = '';
     if (this.regStateDisplay) this.regStateDisplay.textContent = 'Select State';
     if (this.regStateInput) this.regStateInput.value = '';
+    this.setLocationFieldsEnabled(false);
     if (this.regDistrictDisplay) this.regDistrictDisplay.textContent = 'Select District';
     if (this.regDistrictInput) this.regDistrictInput.value = '';
     if (this.regDistrictMenu) this.regDistrictMenu.innerHTML = '';

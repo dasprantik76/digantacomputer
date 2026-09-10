@@ -14,7 +14,7 @@
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="public-style.css?v=25.0">
+  <link rel="stylesheet" href="public-style.css?v=25.3">
   <script src="site-config.js?v=5"></script>
   <script>
     // Fast synchronous pre-hydration to eliminate any flash or delay of text
@@ -691,12 +691,17 @@
             <!-- Required passport photo; uploaded securely to ImageKit on submit. -->
             <div class="form-group form-col-full student-photo-field" id="regPhotoField">
               <label for="regStudentPhoto">Student Passport Photo <span class="required-star">*</span></label>
+              <span class="student-photo-format">JPG, JPEG, PNG or WebP; maximum 2 MB.</span>
               <div class="student-photo-upload" id="regPhotoUpload">
                 <input type="file" id="regStudentPhoto" name="studentPassportPhoto"
                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                   aria-describedby="regPhotoHelp regPhotoError" required>
+                <button type="button" class="student-photo-clear" id="btnClearStudentPhoto"
+                  aria-label="Remove selected passport photo" title="Remove selected photo" hidden>
+                  <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
               </div>
-              <span class="student-photo-help" id="regPhotoHelp"><i class="fa-solid fa-circle-info"></i> Please note, this photo will be printed on your certificate, after completion of your course. JPG, JPEG, PNG or WebP; maximum 2 MB.</span>
+              <span class="student-photo-help" id="regPhotoHelp"><i class="fa-solid fa-circle-info"></i><span>Please note, this photo will be printed on your certificate, after completion of your course.</span></span>
               <span class="input-error-msg" id="regPhotoError" role="alert"></span>
             </div>
 
@@ -752,7 +757,7 @@
               <label>District <span class="required-star">*</span></label>
               <div class="custom-select-container" id="regDistrictDropdown">
                 <button type="button" class="custom-select-trigger" id="regDistrictTrigger" aria-haspopup="listbox"
-                  aria-expanded="false">
+                  aria-expanded="false" disabled>
                   <i class="fa-solid fa-city select-icon"></i>
                   <span class="select-label" id="regDistrictDisplay">Select District</span>
                   <i class="fa-solid fa-chevron-down select-chevron"></i>
@@ -770,9 +775,10 @@
               <div class="input-icon-wrap">
                 <i class="fa-solid fa-location-dot"></i>
                 <input type="text" id="regPinCode" maxlength="6" pattern="[0-9]{6}" inputmode="numeric"
-                  placeholder="6-digit pin code" required>
+                  placeholder="Select a state first" required disabled>
               </div>
               <span class="input-error-msg" id="regPinCodeError">Please enter a valid 6-digit pin code.</span>
+              <span class="pin-area-name" id="regPinArea" aria-live="polite"></span>
             </div>
 
             <!-- 15. Full Address -->
@@ -1098,7 +1104,7 @@
   <!-- Public Script -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
   <script src="certificate-canvas.js?v=16"></script>
-  <script src="public-script.js?v=7.1"></script>
+  <script src="public-script.js?v=7.3"></script>
 </body>
 
 </html>
