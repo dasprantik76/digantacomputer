@@ -337,6 +337,7 @@ class PublicAcademyApp {
     this.certPhone = document.getElementById('certPhone');
     this.certPhoneError = document.getElementById('certPhoneError');
     this.certDob = document.getElementById('certDob');
+    this.certDobError = document.getElementById('certDobError');
     this.btnSearchCertificate = document.getElementById('btnSearchCert');
 
     this.certResultContainer = document.getElementById('certResultContainer');
@@ -498,6 +499,7 @@ class PublicAcademyApp {
 
     const student = students.find(item => String(item.id) === certificateId);
     if (!student) {
+      if (this.certSearchForm) this.certSearchForm.style.display = '';
       if (this.certResultContainer) this.certResultContainer.style.display = 'none';
       if (this.certNotFoundState) this.certNotFoundState.style.display = 'flex';
       return;
@@ -507,6 +509,7 @@ class PublicAcademyApp {
 
   async showCertificateResult(student) {
     if (student.status !== 'Completed') {
+      if (this.certSearchForm) this.certSearchForm.style.display = '';
       if (this.certResultContainer) this.certResultContainer.style.display = 'none';
       if (this.certNotFoundState) this.certNotFoundState.style.display = 'none';
       if (this.certIncompleteState) {
@@ -524,6 +527,7 @@ class PublicAcademyApp {
     const course = this.courses.find(item => item.id === courseId);
     await window.CertificateCanvas.render(student, course);
     if (this.certResultContainer) {
+      if (this.certSearchForm) this.certSearchForm.style.display = 'none';
       this.certResultContainer.style.display = 'block';
       this.certResultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -694,6 +698,10 @@ class PublicAcademyApp {
     // Certificate Search Form Submit Handler
     if (this.certSearchForm) {
       this.certSearchForm.addEventListener('submit', (e) => this.handleCertificateSearch(e));
+      this.certSearchForm.addEventListener('input', (e) => {
+        e.target?.classList.remove('input-error');
+        if (e.target === this.certDob && this.certDobError) this.certDobError.style.display = 'none';
+      });
     }
 
     if (this.homeContactForm) {
@@ -703,6 +711,7 @@ class PublicAcademyApp {
     // Certificate Reset / Print Buttons
     if (this.btnResetCertSearch) {
       this.btnResetCertSearch.addEventListener('click', () => {
+        if (this.certSearchForm) this.certSearchForm.style.display = '';
         if (this.certResultContainer) this.certResultContainer.style.display = 'none';
         if (this.certNotFoundState) this.certNotFoundState.style.display = 'none';
         if (this.certIncompleteState) this.certIncompleteState.style.display = 'none';
@@ -713,6 +722,8 @@ class PublicAcademyApp {
           this.certPhone.focus();
         }
         if (this.certPhoneError) this.certPhoneError.style.display = 'none';
+        if (this.certDob) this.certDob.classList.remove('input-error');
+        if (this.certDobError) this.certDobError.style.display = 'none';
       });
     }
 
@@ -1437,6 +1448,17 @@ class PublicAcademyApp {
       : '<i class="fa-solid fa-paper-plane"></i> Submit Registration';
   }
 
+  setCertificateSearchBusy(isBusy) {
+    if (!this.btnSearchCertificate) return;
+    this.btnSearchCertificate.disabled = isBusy;
+    this.btnSearchCertificate.classList.toggle('is-loading', isBusy);
+    this.btnSearchCertificate.setAttribute('aria-busy', String(isBusy));
+    this.btnSearchCertificate.setAttribute('aria-label', isBusy ? 'Verifying certificate' : 'Verify & View Certificate');
+    this.btnSearchCertificate.innerHTML = isBusy
+      ? '<span class="registration-spinner" aria-hidden="true"></span>'
+      : '<i class="fa-solid fa-magnifying-glass"></i> Verify &amp; View Certificate';
+  }
+
   async compressStudentPhoto(file) {
     const sourceUrl = URL.createObjectURL(file);
     const image = new Image();
@@ -1665,7 +1687,7 @@ class PublicAcademyApp {
     if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,63}$/i.test(email)) {
       this.regEmail.classList.add('input-error');
       if (this.regEmailError) {
-        this.regEmailError.textContent = 'Enter a valid email address, for example name@example.com.';
+        this.regEmailError.textContent = 'Please enter a valid email address.';
         this.regEmailError.style.display = 'block';
       }
       this.regEmail.focus();
@@ -1700,7 +1722,7 @@ class PublicAcademyApp {
         this.setRegistrationBusy(false);
         this.regEmail.classList.add('input-error');
         if (this.regEmailError) {
-          this.regEmailError.textContent = emailCheck?.error || 'This email domain does not appear to accept email.';
+          this.regEmailError.textContent = 'Please enter a valid email address.';
           this.regEmailError.style.display = 'block';
         }
         this.regEmail.focus();
@@ -1711,7 +1733,7 @@ class PublicAcademyApp {
       this.setRegistrationBusy(false);
       this.regEmail.classList.add('input-error');
       if (this.regEmailError) {
-        this.regEmailError.textContent = 'The email address could not be verified. Please try again.';
+        this.regEmailError.textContent = 'Please enter a valid email address.';
         this.regEmailError.style.display = 'block';
       }
       this.showToast('Email verification is temporarily unavailable.', 'error');
@@ -1898,7 +1920,17 @@ class PublicAcademyApp {
     const phone = this.certPhone.value.trim().replace(/\D/g, '');
     const dob = this.certDob.value.trim();
 
+    this.certPhone.classList.toggle('input-error', !phone);
+    this.certDob.classList.toggle('input-error', !dob);
+    if (this.certPhoneError) {
+      this.certPhoneError.textContent = 'Please enter a valid 10-digit mobile number.';
+      this.certPhoneError.style.display = phone ? 'none' : 'block';
+    }
+    if (this.certDobError) this.certDobError.style.display = dob ? 'none' : 'block';
+
     if (!phone || !dob) {
+      const firstMissingField = !phone ? this.certPhone : this.certDob;
+      firstMissingField?.focus();
       this.showToast('Please enter both Mobile Number and Date of Birth.', 'error');
       return;
     }
@@ -1914,8 +1946,10 @@ class PublicAcademyApp {
       return;
     }
 
-    window.CertificateCanvas.clear();
-    if (this.certResultContainer) this.certResultContainer.style.display = 'none';
+    this.setCertificateSearchBusy(true);
+    try {
+      window.CertificateCanvas.clear();
+      if (this.certResultContainer) this.certResultContainer.style.display = 'none';
 
     // Try to fetch latest students for this specific academy tenant from cloud
     let allStudents = [];
@@ -1950,6 +1984,7 @@ class PublicAcademyApp {
     });
 
     if (!student) {
+      if (this.certSearchForm) this.certSearchForm.style.display = '';
       if (this.certResultContainer) this.certResultContainer.style.display = 'none';
       if (this.certIncompleteState) this.certIncompleteState.style.display = 'none';
       if (this.certNotFoundState) {
@@ -1959,9 +1994,14 @@ class PublicAcademyApp {
       return;
     }
 
-    await this.showCertificateResult(student);
+      await this.showCertificateResult(student);
 
-    this.showToast(`Certificate verified for ${toTitleCase(student.name)}!`, 'success');
+      if (student.status === 'Completed') {
+        this.showToast(`Certificate verified for ${toTitleCase(student.name)}!`, 'success');
+      }
+    } finally {
+      this.setCertificateSearchBusy(false);
+    }
   }
 
   validateAuthenticationCode(inputCode) {

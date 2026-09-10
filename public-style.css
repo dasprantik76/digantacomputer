@@ -493,12 +493,15 @@ textarea {
 .nav-menu {
   display: flex;
   align-items: center;
-  gap: 0.15rem;
+  gap: 0;
   height: 66px;
   list-style: none;
 }
 
-.nav-menu > li { height: 100%; }
+.nav-menu > li {
+  width: 154px;
+  height: 100%;
+}
 
 .nav-link {
   font-family: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
@@ -510,9 +513,11 @@ textarea {
   height: 100%;
   border-radius: 0;
   transition: all var(--transition-fast);
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.45rem;
+  width: 100%;
   cursor: pointer;
   border: none;
 }
@@ -531,9 +536,18 @@ textarea {
 }
 
 @media (min-width: 769px) and (max-width: 1200px) {
+  .nav-menu {
+    gap: 0;
+  }
+
+  .nav-menu > li {
+    width: 128px;
+  }
+
   .nav-link {
-    padding-right: 0.9rem;
-    padding-left: 0.9rem;
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
+    font-size: 0.8rem;
   }
 }
 
@@ -1208,9 +1222,9 @@ textarea {
   color: #477496;
 }
 
-#view-student #studentRegForm .input-icon-wrap input:hover,
-#view-student #studentRegForm .form-group textarea:hover,
-#view-student #studentRegForm .custom-select-trigger:hover {
+#view-student #studentRegForm .input-icon-wrap input:not(:disabled):hover,
+#view-student #studentRegForm .form-group textarea:not(:disabled):hover,
+#view-student #studentRegForm .custom-select-trigger:not(:disabled):hover {
   border-color: #477496;
   box-shadow: 0 3px 10px rgba(46, 85, 121, 0.13);
 }
@@ -1464,6 +1478,15 @@ textarea {
   opacity: 0.75;
 }
 
+#studentRegForm input:disabled:hover,
+#studentRegForm .custom-select-trigger:disabled:hover {
+  color: #94a3b8 !important;
+  background: #e8edf2 !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
 .pin-area-name {
   display: none;
   color: #15803d;
@@ -1610,9 +1633,9 @@ textarea {
   to { transform: rotate(360deg); }
 }
 
-#studentRegForm .input-icon-wrap input:hover,
-#studentRegForm .form-group textarea:hover,
-#studentRegForm .custom-select-trigger:hover {
+#studentRegForm .input-icon-wrap input:not(:disabled):hover,
+#studentRegForm .form-group textarea:not(:disabled):hover,
+#studentRegForm .custom-select-trigger:not(:disabled):hover {
   background-color: #ffffff;
   border-color: #64748b;
   box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07);

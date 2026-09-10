@@ -14,7 +14,7 @@
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="public-style.css?v=25.5">
+  <link rel="stylesheet" href="public-style.css?v=25.7">
   <script src="site-config.js?v=5"></script>
   <script>
     // Fast synchronous pre-hydration to eliminate any flash or delay of text
@@ -521,7 +521,7 @@
     <div class="student-view-container">
 
       <div class="registration-card">
-        <form id="studentRegForm" autocomplete="off">
+        <form id="studentRegForm" autocomplete="off" novalidate>
           <div class="form-grid">
 
             <div class="form-section-heading form-col-full">
@@ -863,7 +863,7 @@
     <div class="student-view-container">
 
       <div class="registration-card">
-        <form id="certificateSearchForm" autocomplete="off">
+        <form id="certificateSearchForm" autocomplete="off" novalidate>
           <div class="form-grid">
             <!-- 1. Mobile Number -->
             <div class="form-group">
@@ -882,6 +882,7 @@
                 <i class="fa-regular fa-calendar"></i>
                 <input type="date" id="certDob" required>
               </div>
+              <span class="input-error-msg" id="certDobError">Please enter your date of birth.</span>
             </div>
           </div>
 
@@ -1107,7 +1108,7 @@
   <!-- Public Script -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
   <script src="certificate-canvas.js?v=16"></script>
-  <script src="public-script.js?v=7.8"></script>
+  <script src="public-script.js?v=7.10"></script>
 </body>
 
 </html>
