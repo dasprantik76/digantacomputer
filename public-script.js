@@ -1418,12 +1418,14 @@ class PublicAcademyApp {
     if (this.btnClearStudentPhoto) this.btnClearStudentPhoto.hidden = true;
   }
 
-  setRegistrationBusy(isBusy, label = 'Submit Registration') {
+  setRegistrationBusy(isBusy) {
     if (!this.btnSubmitReg) return;
     this.btnSubmitReg.disabled = isBusy;
     this.btnSubmitReg.classList.toggle('is-loading', isBusy);
+    this.btnSubmitReg.setAttribute('aria-busy', String(isBusy));
+    this.btnSubmitReg.setAttribute('aria-label', isBusy ? 'Processing registration' : 'Submit Registration');
     this.btnSubmitReg.innerHTML = isBusy
-      ? `<i class="fa-solid fa-spinner fa-spin"></i> ${escapeHtml(label)}`
+      ? '<span class="registration-spinner" aria-hidden="true"></span>'
       : '<i class="fa-solid fa-paper-plane"></i> Submit Registration';
   }
 
@@ -1712,12 +1714,12 @@ class PublicAcademyApp {
     let registrationResult;
     let submissionStage = 'photo';
     try {
-      this.setRegistrationBusy(true, 'Uploading Passport Photo…');
+      this.setRegistrationBusy(true);
       const photoMetadata = await this.uploadStudentPhoto(photoFile, studentId, authCode, courseId);
       Object.assign(newStudent, photoMetadata);
 
       submissionStage = 'registration';
-      this.setRegistrationBusy(true, 'Submitting Registration…');
+      this.setRegistrationBusy(true);
       const response = await fetch(getPublicApiUrl(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1783,7 +1785,7 @@ class PublicAcademyApp {
     if (this.modalStudentId) this.modalStudentId.textContent = savedStudent.id;
     if (this.modalStudentName) this.modalStudentName.textContent = fullName;
     if (this.modalCourseName) this.modalCourseName.textContent = courseTitle;
-    if (this.modalRegDate) this.modalRegDate.textContent = joinDate;
+    if (this.modalRegDate) this.modalRegDate.textContent = formatCertificateDate(joinDate);
 
     if (this.successModal) {
       this.successModal.classList.add('open');

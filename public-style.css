@@ -1586,6 +1586,21 @@ textarea {
 
 .btn-submit-reg.is-loading {
   cursor: wait;
+  justify-content: center;
+  min-width: 220px;
+}
+
+.registration-spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: registration-spin 0.7s linear infinite;
+}
+
+@keyframes registration-spin {
+  to { transform: rotate(360deg); }
 }
 
 #studentRegForm .input-icon-wrap input:hover,
@@ -2067,68 +2082,149 @@ input[data-capitalize="true"] {
   transform: scale(1) translateY(0);
 }
 
+.registration-success-dialog {
+  max-width: 570px;
+  padding: 2.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
 .success-icon-badge {
-  width: 70px;
-  height: 70px;
+  width: 64px;
+  height: 64px;
   border-radius: var(--radius-full);
   background-color: #ecfdf5;
   color: var(--emerald);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.25rem;
-  margin-bottom: 1.25rem;
-  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.2);
+  font-size: 1.75rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 10px 24px rgba(16, 185, 129, 0.16);
+}
+
+.success-kicker {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: #059669;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .success-title {
   font-size: 1.5rem;
   font-weight: 800;
   color: var(--text-main);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.55rem;
 }
 
 .success-desc {
   font-size: 0.9375rem;
   color: var(--text-muted);
-  margin-bottom: 1.5rem;
+  max-width: 430px;
+  margin: 0 auto 1.75rem;
+  line-height: 1.6;
 }
 
 .receipt-box {
   background-color: #f8fafc;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 1.25rem;
+  border-radius: 14px;
+  padding: 0.35rem 1.25rem;
   text-align: left;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1.75rem;
+  gap: 0;
+  margin-bottom: 1.5rem;
 }
 
 .receipt-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 145px minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+  padding: 0.95rem 0;
+  border-bottom: 1px solid #e2e8f0;
   font-size: 0.875rem;
+}
+
+.receipt-row:last-child {
+  border-bottom: 0;
 }
 
 .receipt-row span {
   color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .receipt-row strong {
   color: var(--text-main);
   font-weight: 700;
+  line-height: 1.45;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .receipt-id-badge {
   background-color: var(--primary-light);
   color: var(--primary);
-  padding: 0.2rem 0.6rem;
-  border-radius: var(--radius-sm);
-  font-family: monospace;
-  font-size: 0.9375rem;
+  justify-self: end;
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.875rem;
+  letter-spacing: 0.02em;
+}
+
+.success-dialog-actions {
+  display: flex;
+}
+
+.success-done-button {
+  width: 100%;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #ffffff;
+  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+  border: 0;
+  border-radius: 10px;
+  box-shadow: 0 7px 16px rgba(79, 70, 229, 0.22);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+
+.success-done-button:hover,
+.success-done-button:focus-visible {
+  background: linear-gradient(135deg, #3730a3 0%, #4f46e5 100%);
+  box-shadow: 0 9px 19px rgba(79, 70, 229, 0.3);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 560px) {
+  .registration-success-dialog {
+    padding: 2rem 1.25rem 1.4rem;
+  }
+
+  .receipt-row {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+
+  .receipt-row strong,
+  .receipt-id-badge {
+    justify-self: start;
+    text-align: left;
+  }
 }
 
 /* Professional Home Page */
