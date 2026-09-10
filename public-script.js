@@ -711,7 +711,14 @@ class PublicAcademyApp {
     // Certificate Reset / Print Buttons
     if (this.btnResetCertSearch) {
       this.btnResetCertSearch.addEventListener('click', () => {
-        if (this.certSearchForm) this.certSearchForm.style.display = '';
+        if (this.certSearchForm) {
+          this.certSearchForm.style.display = '';
+          this.certSearchForm.classList.remove('cert-search-returning');
+          void this.certSearchForm.offsetWidth;
+          this.certSearchForm.classList.add('cert-search-returning');
+          this.certSearchForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          window.setTimeout(() => this.certSearchForm?.classList.remove('cert-search-returning'), 550);
+        }
         if (this.certResultContainer) this.certResultContainer.style.display = 'none';
         if (this.certNotFoundState) this.certNotFoundState.style.display = 'none';
         if (this.certIncompleteState) this.certIncompleteState.style.display = 'none';
@@ -719,7 +726,7 @@ class PublicAcademyApp {
         if (this.certSearchForm) this.certSearchForm.reset();
         if (this.certPhone) {
           this.certPhone.classList.remove('input-error');
-          this.certPhone.focus();
+          this.certPhone.focus({ preventScroll: true });
         }
         if (this.certPhoneError) this.certPhoneError.style.display = 'none';
         if (this.certDob) this.certDob.classList.remove('input-error');

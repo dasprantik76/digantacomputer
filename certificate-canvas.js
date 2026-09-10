@@ -32,12 +32,12 @@
       year: 'numeric'
     });
   }
-  function field(value, x, y, width, size = 37, align = 'center') {
+  function field(value, x, y, width, size = 37, align = 'center', weight = 500) {
     const text = String(value || '').replace(/\s+/g, ' ').trim();
     if (!text) return;
     ctx.save();
-    ctx.fillStyle = '#142d4e';
-    do { ctx.font = `700 ${size--}px "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, Arial, sans-serif`; }
+    ctx.fillStyle = '#111111';
+    do { ctx.font = `${weight} ${size--}px "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, Arial, sans-serif`; }
     while (ctx.measureText(text).width > width - 12 && size > 15);
     ctx.textAlign = align;
     const textX = align === 'left' ? x : x + width / 2;
@@ -50,6 +50,7 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     print.disabled = download.disabled = true;
     status.textContent = '';
+    status.removeAttribute('data-state');
   }
   async function render(student, course) {
     clear();
@@ -60,8 +61,8 @@
       if (current !== revision) return;
       ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
       ctx.setTransform(canvas.width / 1920, 0, 0, canvas.height / 1280, 0, 0);
-      field(student.certificateSerial || student.id, 284, 533, 481, 34, 'left');
-      field(date(student.certificateIssueDate), 1640, 533, 200, 34, 'left');
+      field(student.certificateSerial || student.id, 284, 533, 481, 34, 'left', 400);
+      field(date(student.certificateIssueDate), 1640, 533, 200, 34, 'left', 400);
       field(student.name || student.fullName, 860, 642, 605);
       field(student.fatherName, 442, 704, 514);
       field(course?.title, 355, 765, 1055);
@@ -72,7 +73,6 @@
       ].filter(Boolean).join(' - ');
       field(period, 1007, 901, 437, 33);
       field(student.grade, 706, 962, 252);
-      let photoFailed = false;
       if (student.photoUrl) {
         try {
           const photo = await loadImage(student.photoUrl);
@@ -101,7 +101,7 @@
             PHOTO_BOX.height - 3
           );
           ctx.restore();
-        } catch { photoFailed = true; }
+        } catch {}
       }
       if (window.QRious && student.id) {
         const verificationUrl = new URL(window.location.origin + window.location.pathname);
@@ -125,9 +125,11 @@
       canvas.setAttribute('aria-label', `Completion certificate for ${student.name || student.fullName}, ${course?.title || ''}, student ID ${student.id || ''}`);
       filename = `certificate-${String(student.id || 'student').replace(/[^a-z0-9_-]/gi, '-')}`;
       print.disabled = download.disabled = false;
-      status.textContent = photoFailed ? 'Certificate ready. Student photo could not be loaded.' : 'Certificate ready.';
+      status.dataset.state = 'success';
+      status.textContent = `Congratulations, ${student.name || student.fullName || 'Student'}! Your certificate is ready.`;
     } catch {
       if (current !== revision) return;
+      status.dataset.state = 'error';
       status.textContent = 'The certificate template could not be loaded. Please contact the centre.';
     }
   }
