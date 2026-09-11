@@ -221,7 +221,6 @@ textarea {
   background: transparent;
   border-color: transparent;
   box-shadow: none;
-  transform: translateY(-1px);
 }
 
 .badge-banner-actions {
@@ -248,7 +247,6 @@ textarea {
   color: #ffffff;
   background: linear-gradient(135deg, #7e22ce, #9333ea);
   border-color: rgba(255, 255, 255, 0.28);
-  transform: translateY(-1px);
 }
 
 .badge-admin-icon {
@@ -2063,12 +2061,7 @@ input[data-capitalize="true"] {
 }
 
 .btn-submit-reg:hover {
-  transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
-}
-
-.btn-submit-reg:active {
-  transform: translateY(0);
 }
 
 /* ==========================================================================
@@ -2237,7 +2230,6 @@ input[data-capitalize="true"] {
   background: linear-gradient(135deg, #3730a3 0%, #4f46e5 100%);
   box-shadow: 0 9px 19px rgba(79, 70, 229, 0.3);
   outline: none;
-  transform: translateY(-1px);
 }
 
 @media (max-width: 560px) {
@@ -2851,7 +2843,7 @@ input[data-capitalize="true"] {
 .about-highlights-list li:nth-child(even) i { background: #0f766e; }
 .about-register-action { display: flex; justify-content: center; margin-top: 2.75rem; }
 .about-register-action .btn { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem; padding: 0.75rem 1.5rem; color: #ffffff; background: linear-gradient(135deg, #145c4d, #0b3f36); border: 0; border-radius: 10px; font: inherit; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: filter 0.2s ease, transform 0.2s ease; }
-.about-register-action .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.about-register-action .btn:hover { filter: brightness(1.1); }
 
 /* Footer */
 .public-footer {
@@ -3173,8 +3165,15 @@ input[data-capitalize="true"] {
 }
 
 .btn-cert-download:hover {
-  transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+}
+
+button:hover,
+.btn:hover,
+.btn-icon:hover,
+.btn-submit-reg:hover,
+.btn-cert-download:hover {
+  transform: none !important;
 }
 
 .btn-cert-reset {

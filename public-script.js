@@ -2104,15 +2104,12 @@ function toTitleCase(str) {
 }
 
 function formatCertificateDate(dateStr) {
-  if (!dateStr) {
-    return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  }
-  try {
-    const d = new Date(dateStr + 'T00:00:00');
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  } catch (e) {
-    return dateStr;
-  }
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+  const value = dateStr || new Date().toISOString().slice(0, 10);
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00` : value;
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) return dateStr || '';
+  return `${date.getDate()} ${monthNames[date.getMonth()]}, ${date.getFullYear()}`;
 }
 
 function applyAutoCapitalization(inputElement) {

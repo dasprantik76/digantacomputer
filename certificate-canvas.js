@@ -10,6 +10,7 @@
   let filename = 'certificate';
   const PHOTO_BOX = { x: 1525, y: 649, width: 227, height: 268 };
   const QR_BOX = { x: 390, y: 1058, size: 124 };
+  const DISPLAY_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   function loadImage(url) {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -22,15 +23,12 @@
   function date(value) {
     if (!value) return '';
     const parsed = new Date(String(value).slice(0, 10) + 'T00:00:00');
-    return Number.isNaN(parsed.getTime()) ? '' : parsed.toLocaleDateString('en-GB');
+    return Number.isNaN(parsed.getTime()) ? '' : `${parsed.getDate()} ${DISPLAY_MONTHS[parsed.getMonth()]}, ${parsed.getFullYear()}`;
   }
   function monthYear(value) {
     if (!value) return '';
     const parsed = new Date(String(value).slice(0, 10) + 'T00:00:00');
-    return Number.isNaN(parsed.getTime()) ? '' : parsed.toLocaleDateString('en-GB', {
-      month: 'short',
-      year: 'numeric'
-    });
+    return Number.isNaN(parsed.getTime()) ? '' : `${DISPLAY_MONTHS[parsed.getMonth()]} ${parsed.getFullYear()}`;
   }
   function field(value, x, y, width, size = 37, align = 'center', weight = 500) {
     const text = String(value || '').replace(/\s+/g, ' ').trim();
