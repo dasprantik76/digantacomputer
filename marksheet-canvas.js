@@ -658,6 +658,117 @@
     visibleCtx.drawImage(activeBuffer, 0, 0, activeBuffer.width, activeBuffer.height, 0, 0, canvas.width, canvas.height);
   }
 
+  let zoomLevel = 1.0;
+  let panX = 0;
+  let panY = 0;
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+
+  function applyZoomTransform() {
+    if (!canvas) return;
+    if (zoomLevel <= 1.0) {
+      panX = 0;
+      panY = 0;
+      canvas.style.transform = `scale(${zoomLevel})`;
+      canvas.classList.remove('is-zoomed', 'is-dragging');
+    } else {
+      canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+      canvas.classList.add('is-zoomed');
+    }
+    const label = document.getElementById('marksheetZoomLevel');
+    if (label) label.textContent = `${Math.round(zoomLevel * 100)}%`;
+    const btnIn = document.getElementById('btnMarksheetZoomIn');
+    if (btnIn) btnIn.disabled = zoomLevel >= 2.5;
+    const btnOut = document.getElementById('btnMarksheetZoomOut');
+    if (btnOut) btnOut.disabled = zoomLevel <= 0.6;
+  }
+
+  function setZoom(newZoom) {
+    zoomLevel = Math.max(0.6, Math.min(2.5, +Number(newZoom).toFixed(2)));
+    applyZoomTransform();
+  }
+
+  function resetZoom() {
+    zoomLevel = 1.0;
+    panX = 0;
+    panY = 0;
+    applyZoomTransform();
+  }
+
+  function setupZoomControls() {
+    const btnIn = document.getElementById('btnMarksheetZoomIn');
+    const btnOut = document.getElementById('btnMarksheetZoomOut');
+    const btnReset = document.getElementById('btnMarksheetZoomReset');
+    const stage = document.getElementById('marksheetPreviewStage') || (canvas ? canvas.parentElement : null);
+
+    if (btnIn && !btnIn.dataset.bound) {
+      btnIn.dataset.bound = 'true';
+      btnIn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setZoom(zoomLevel + 0.2);
+      });
+    }
+    if (btnOut && !btnOut.dataset.bound) {
+      btnOut.dataset.bound = 'true';
+      btnOut.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setZoom(zoomLevel - 0.2);
+      });
+    }
+    if (btnReset && !btnReset.dataset.bound) {
+      btnReset.dataset.bound = 'true';
+      btnReset.addEventListener('click', (e) => {
+        e.stopPropagation();
+        resetZoom();
+      });
+    }
+
+    if (canvas && !canvas.dataset.zoomBound) {
+      canvas.dataset.zoomBound = 'true';
+      canvas.addEventListener('mousedown', (e) => {
+        if (e.button !== 0 || zoomLevel <= 1.0) return;
+        isDragging = true;
+        startX = e.clientX - panX;
+        startY = e.clientY - panY;
+        canvas.classList.add('is-dragging');
+        e.preventDefault();
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        panX = e.clientX - startX;
+        panY = e.clientY - startY;
+        applyZoomTransform();
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (isDragging) {
+          isDragging = false;
+          if (canvas) canvas.classList.remove('is-dragging');
+        }
+      });
+
+      canvas.addEventListener('dblclick', () => {
+        if (zoomLevel > 1.0) resetZoom();
+        else setZoom(1.5);
+      });
+    }
+
+    if (stage && !stage.dataset.wheelBound) {
+      stage.dataset.wheelBound = 'true';
+      stage.addEventListener('wheel', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          const delta = e.deltaY < 0 ? 0.15 : -0.15;
+          setZoom(zoomLevel + delta);
+        }
+      }, { passive: false });
+    }
+
+    applyZoomTransform();
+  }
+
   function clear() {
     revision++;
     activeBuffer = null;
@@ -672,6 +783,9 @@
     }
     const emptyState = document.getElementById('marksheetPreviewEmpty');
     if (emptyState) emptyState.hidden = false;
+    const zoomControls = document.getElementById('marksheetZoomControls');
+    if (zoomControls) zoomControls.hidden = true;
+    resetZoom();
     if (download) download.disabled = true;
     if (status) {
       status.textContent = '';
@@ -696,6 +810,9 @@
       }
       const emptyState = document.getElementById('marksheetPreviewEmpty');
       if (emptyState) emptyState.hidden = true;
+      const zoomControls = document.getElementById('marksheetZoomControls');
+      if (zoomControls) zoomControls.hidden = false;
+      resetZoom();
 
       updateVisibleCanvas();
 
@@ -746,12 +863,21 @@
     });
   }
 
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupZoomControls);
+  } else {
+    setupZoomControls();
+  }
+
   window.MarksheetCanvas = {
     render,
     clear,
     updateVisibleCanvas,
     renderToBuffer,
     generateStudentMarksheetPng,
-    downloadActiveMarksheet
+    downloadActiveMarksheet,
+    setZoom,
+    resetZoom,
+    setupZoomControls
   };
 })();
