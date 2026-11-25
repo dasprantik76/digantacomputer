@@ -1,10 +1,9 @@
 /**
- * Configuration for one independently deployed public academy website.
- * Copy the public-site folder for a new academy and update these settings.
+ * Configuration for independently deployed public academy website.
  */
 window.PUBLIC_SITE_CONFIG = Object.freeze({
-  academySlug: 'prantik',
+  academySlug: 'diganta',
   apiBaseUrl: 'https://academy.pixelsetu.com',
   adminPortalUrl: 'https://academy.pixelsetu.com',
-  certificateTemplateUrl: 'assets/diganta-certificate-template.jpg?v=3'
+  certificateTemplateUrl: 'assets/diganta-certificate-template.jpg?v=4'
 });

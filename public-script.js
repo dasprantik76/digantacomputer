@@ -6,7 +6,8 @@
  */
 
 const PUBLIC_SITE_CONFIG = window.PUBLIC_SITE_CONFIG || {};
-const PUBLIC_API_BASE_URL = String(PUBLIC_SITE_CONFIG.apiBaseUrl || '').replace(/\/$/, '');
+const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const PUBLIC_API_BASE_URL = isLocal ? '' : String(PUBLIC_SITE_CONFIG.apiBaseUrl || '').replace(/\/$/, '');
 const getPublicApiUrl = (query = '') => `${PUBLIC_API_BASE_URL}/api/data${query}`;
 const getImageKitAuthUrl = () => `${PUBLIC_API_BASE_URL}/api/imagekit-auth`;
 const getPinCodeLookupUrl = pinCode => `${PUBLIC_API_BASE_URL}/api/pincode?pincode=${encodeURIComponent(pinCode)}`;
@@ -77,9 +78,29 @@ class PublicAcademyApp {
     this.courses = [];
     this.academyProfile = null;
 
-    // This public deployment is dedicated to the configured Diganta academy.
+    // Resolve active academy from query parameter, path, or domain
     this.currentAcademySlug = this.resolveTenant();
-    this.currentOwnerEmail = this.currentAcademySlug.includes('poulami') ? 'poulami.13thmay@gmail.com' : 'dasprantik76@gmail.com';
+    if (this.currentAcademySlug.includes('poulami')) {
+      this.currentOwnerEmail = 'poulami.13thmay@gmail.com';
+    } else if (this.currentAcademySlug === 'diganta' || this.currentAcademySlug === 'prantik') {
+      this.currentOwnerEmail = 'rcavirup@gmail.com';
+    } else {
+      // Dynamic slug tenant - check local storage cache for owner email
+      let cachedEmail = '';
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('educore_academy_profile_') || k.startsWith('pixelsetu_academy_profile_'))) {
+          try {
+            const p = JSON.parse(localStorage.getItem(k));
+            if (p && p.slug === this.currentAcademySlug && p.ownerEmail) {
+              cachedEmail = p.ownerEmail;
+              break;
+            }
+          } catch {}
+        }
+      }
+      this.currentOwnerEmail = cachedEmail || '';
+    }
 
     this.cacheDOMElements();
     this.initData();
@@ -93,30 +114,79 @@ class PublicAcademyApp {
     // Asynchronously synchronize courses and profile for this specific academy from MongoDB
     this.fetchCloudData();
 
-    // Check initial hash
-    const hash = window.location.hash.replace('#', '');
-    if (hash === 'courses') {
+    // Check initial hash or query params
+    let searchStr = window.location.search;
+    if (!searchStr && window.location.hash.includes('?')) {
+      searchStr = window.location.hash.slice(window.location.hash.indexOf('?'));
+    }
+    const params = new URLSearchParams(searchStr || window.location.search);
+    const hasCertParam = Boolean(params.get('c') || params.get('cert') || params.get('certificate'));
+    const hasMarksheetParam = Boolean(params.get('m') || params.get('mark') || params.get('marksheet'));
+
+    const hash = window.location.hash.replace('#', '').split('?')[0];
+    if (hasCertParam) {
+      this.switchView('certificate', false);
+      if (!window.location.hash.includes('certificate')) {
+        window.history.replaceState(null, '', `#certificate${searchStr ? (searchStr.startsWith('?') ? searchStr : '?' + searchStr) : ''}`);
+      }
+    } else if (hasMarksheetParam) {
+      this.switchView('marksheet', false);
+      if (!window.location.hash.includes('marksheet')) {
+        window.history.replaceState(null, '', `#marksheet${searchStr ? (searchStr.startsWith('?') ? searchStr : '?' + searchStr) : ''}`);
+      }
+    } else if (hash === 'courses') {
       this.switchView('courses');
-    } else if (hash === 'student' || hash === 'registration') {
+    } else if (hash === 'student' || hash === 'student-registration' || hash === 'registration') {
       this.switchView('student');
+    } else if (hash === 'student-verification' || hash === 'verification') {
+      this.switchView('student-verification');
     } else if (hash === 'certificate') {
       this.switchView('certificate');
+    } else if (hash === 'marksheet' || hash === 'marksheet-download') {
+      this.switchView('marksheet');
     } else if (hash === 'about') {
       this.switchView('about');
     } else {
       this.switchView('home');
     }
+
+    if (hasCertParam || hasMarksheetParam) {
+      const rawStudents = localStorage.getItem(this.getStorageKey(STORAGE_KEYS.STUDENTS));
+      if (rawStudents) {
+        try {
+          const cachedStudents = JSON.parse(rawStudents);
+          if (Array.isArray(cachedStudents) && cachedStudents.length > 0) {
+            if (hasCertParam) this.openCertificateFromVerificationLink(cachedStudents, false);
+            if (hasMarksheetParam) this.openMarksheetFromVerificationLink(cachedStudents, false);
+          }
+        } catch (e) {}
+      }
+    }
   }
 
   initHeroCarousel() {
-    const slides = document.querySelectorAll('.hero-chevron-slide, .hero-svg-slide, .hero-carousel-slide');
-    if (!slides || slides.length < 2) return;
-
     if (this._heroCarouselTimer) {
       clearInterval(this._heroCarouselTimer);
+      this._heroCarouselTimer = null;
     }
 
-    let currentIndex = 0;
+    const slides = document.querySelectorAll('.hero-chevron-slide, .hero-svg-slide, .hero-carousel-slide');
+    if (!slides || slides.length === 0) return;
+
+    // Ensure at least one slide is active
+    let activeIdx = -1;
+    slides.forEach((s, idx) => {
+      if (s.classList.contains('active')) activeIdx = idx;
+    });
+    if (activeIdx === -1) {
+      slides[0].classList.add('active');
+      activeIdx = 0;
+    }
+
+    // If only 1 slide is present, keep it active and do not loop
+    if (slides.length < 2) return;
+
+    let currentIndex = activeIdx;
     this._heroCarouselTimer = setInterval(() => {
       slides[currentIndex].classList.remove('active');
       currentIndex = (currentIndex + 1) % slides.length;
@@ -125,7 +195,7 @@ class PublicAcademyApp {
   }
 
   resolveTenant() {
-    return String(PUBLIC_SITE_CONFIG.academySlug || 'prantik').toLowerCase().trim();
+    return String(PUBLIC_SITE_CONFIG.academySlug || 'diganta').toLowerCase().trim();
   }
 
   updateAdminLoginLinks() {
@@ -138,27 +208,40 @@ class PublicAcademyApp {
   }
 
   getStorageKey(baseKey) {
-    return `${baseKey}_${this.currentOwnerEmail}`;
+    return `${baseKey}_${this.currentOwnerEmail || this.currentAcademySlug}`;
   }
 
   getDefaultProfile() {
-    if (this.currentOwnerEmail.includes('poulami')) {
+    if (this.currentAcademySlug === 'poulami' || this.currentOwnerEmail.includes('poulami')) {
       return {
         academyName: 'Poulami Dance Academy',
         ownerName: 'Poulami',
-        email: this.currentOwnerEmail,
+        email: 'poulami.13thmay@gmail.com',
         phone: '9876543211',
         slug: 'poulami'
       };
     }
+    if (this.currentAcademySlug === 'diganta' || this.currentAcademySlug === 'prantik' || this.currentOwnerEmail === 'rcavirup@gmail.com' || this.currentOwnerEmail === 'digantacomputercentre@gmail.com') {
+      return {
+        academyName: 'Diganta Computer Centre',
+        ownerName: 'Diganta',
+        email: 'digantacomputercentre@gmail.com',
+        phone: '9733894742',
+        secondaryPhone: '9733894742',
+        whatsapp: '9733894742',
+        address: 'Shyampur, Howrah',
+        slug: 'diganta'
+      };
+    }
+    const readableName = this.currentAcademySlug
+      ? this.currentAcademySlug.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')
+      : 'Academy';
     return {
-      academyName: 'Diganta Computer Centre',
-      ownerName: 'Prantik Das',
-      email: 'swarupkhan1@gmail.com',
-      phone: '9733894742',
-      secondaryPhone: '9733894742',
-      whatsapp: '9733894742',
-      slug: 'prantik'
+      academyName: readableName,
+      ownerName: 'Academy Administrator',
+      email: this.currentOwnerEmail || '',
+      phone: '',
+      slug: this.currentAcademySlug
     };
   }
 
@@ -189,6 +272,10 @@ class PublicAcademyApp {
     this.navCoursesLink = document.getElementById('navCoursesLink');
     this.navAboutLink = document.getElementById('navAboutLink');
     this.navStudentLink = document.getElementById('navStudentLink');
+    this.navStudentDropdownItem = document.getElementById('navStudentDropdownItem');
+    this.navSubStudentReg = document.getElementById('navSubStudentReg');
+    this.navSubStudentVerify = document.getElementById('navSubStudentVerify');
+    this.navSubMarksheetDownload = document.getElementById('navSubMarksheetDownload');
     this.navCertificateLink = document.getElementById('navCertificateLink');
     this.btnHeroGoToRegister = document.getElementById('btnHeroGoToRegister');
     this.btnMobileNav = document.getElementById('btnMobileNav');
@@ -198,7 +285,52 @@ class PublicAcademyApp {
     this.viewCourses = document.getElementById('view-courses');
     this.viewAbout = document.getElementById('view-about');
     this.viewStudent = document.getElementById('view-student');
+    this.viewStudentVerification = document.getElementById('view-student-verification');
     this.viewCertificate = document.getElementById('view-certificate');
+    this.viewMarksheet = document.getElementById('view-marksheet');
+
+    // Student Verification Elements
+    this.studentVerifySearchForm = document.getElementById('studentVerifySearchForm');
+    this.verifyPhone = document.getElementById('verifyPhone');
+    this.verifyPhoneError = document.getElementById('verifyPhoneError');
+    this.verifyDob = document.getElementById('verifyDob');
+    this.verifyDobError = document.getElementById('verifyDobError');
+    this.btnSearchStudentVerify = document.getElementById('btnSearchStudentVerify');
+    this.studentVerifyNotFoundState = document.getElementById('studentVerifyNotFoundState');
+    this.studentVerifyResultContainer = document.getElementById('studentVerifyResultContainer');
+    this.btnResetStudentVerifySearch = document.getElementById('btnResetStudentVerifySearch');
+    this.btnPrintStudentVerifySlip = document.getElementById('btnPrintStudentVerifySlip');
+    this.verifyAcademyName = document.getElementById('verifyAcademyName');
+    this.verifyAcademySubtitle = document.getElementById('verifyAcademySubtitle');
+    this.verifyStudentStatus = document.getElementById('verifyStudentStatus');
+    this.verifyStudentPhoto = document.getElementById('verifyStudentPhoto');
+    this.verifyStudentPhotoFallback = document.getElementById('verifyStudentPhotoFallback');
+    this.verifyStudentInitials = document.getElementById('verifyStudentInitials');
+    this.verifyStudentId = document.getElementById('verifyStudentId');
+    this.verifyStudentName = document.getElementById('verifyStudentName');
+    this.verifyFatherName = document.getElementById('verifyFatherName');
+    this.verifyMotherName = document.getElementById('verifyMotherName');
+    this.verifyStudentDob = document.getElementById('verifyStudentDob');
+    this.verifyGender = document.getElementById('verifyGender');
+    this.verifyCourseName = document.getElementById('verifyCourseName');
+    this.verifyCourseDuration = document.getElementById('verifyCourseDuration');
+    this.verifyAdmissionDate = document.getElementById('verifyAdmissionDate');
+    this.verifyTimestamp = document.getElementById('verifyTimestamp');
+
+    // Marksheet Download Search Elements
+    this.marksheetSearchForm = document.getElementById('marksheetSearchForm');
+    this.marksheetPhone = document.getElementById('marksheetPhone');
+    this.marksheetPhoneError = document.getElementById('marksheetPhoneError');
+    this.marksheetDob = document.getElementById('marksheetDob');
+    this.marksheetDobError = document.getElementById('marksheetDobError');
+    this.btnSearchMarksheet = document.getElementById('btnSearchMarksheet');
+    this.marksheetNotFoundState = document.getElementById('marksheetNotFoundState');
+    this.marksheetIncompleteState = document.getElementById('marksheetIncompleteState');
+    this.marksheetIncompleteDesc = document.getElementById('marksheetIncompleteDesc');
+    this.marksheetResultContainer = document.getElementById('marksheetResultContainer');
+    this.btnResetMarksheetSearch = document.getElementById('btnResetMarksheetSearch');
+    this.btnPrintMarksheet = document.getElementById('btnPrintMarksheet');
+    this.btnDownloadMarksheet = document.getElementById('btnDownloadMarksheet');
     this.viewNotFound = document.getElementById('view-not-found');
     this.notFoundSubdomainDisplay = document.getElementById('notFoundSubdomainDisplay');
     this.btnNotFoundClaim = document.getElementById('btnNotFoundClaim');
@@ -359,6 +491,7 @@ class PublicAcademyApp {
     this.academyProfile = loadedProfile || this.getDefaultProfile();
 
     // Load Available Courses for active tenant
+    const isDiganta = this.currentAcademySlug === 'diganta' || this.currentAcademySlug === 'prantik' || this.currentOwnerEmail === 'rcavirup@gmail.com';
     const rawCourses = localStorage.getItem(this.getStorageKey(STORAGE_KEYS.COURSES));
     if (rawCourses) {
       try {
@@ -367,14 +500,14 @@ class PublicAcademyApp {
         this.courses = [];
       }
     } else {
-      this.courses = this.currentOwnerEmail.includes('poulami') ? [] : DEFAULT_PUBLIC_COURSES.map(course => ({ ...course }));
+      this.courses = isDiganta ? DEFAULT_PUBLIC_COURSES.map(course => ({ ...course })) : [];
       if (this.courses.length > 0) {
         localStorage.setItem(this.getStorageKey(STORAGE_KEYS.COURSES), JSON.stringify(this.courses));
       }
     }
 
     const seedVersionKey = this.getStorageKey('educore_course_seed_version');
-    if (!this.currentOwnerEmail.includes('poulami') && localStorage.getItem(seedVersionKey) !== PUBLIC_COURSE_SEED_VERSION) {
+    if (isDiganta && localStorage.getItem(seedVersionKey) !== PUBLIC_COURSE_SEED_VERSION) {
       const existingIds = new Set(this.courses.map(course => course.id));
       DEFAULT_PUBLIC_COURSES.forEach(course => {
         if (!existingIds.has(course.id)) this.courses.push({ ...course });
@@ -417,9 +550,9 @@ class PublicAcademyApp {
 
         if (Array.isArray(courses)) {
           this.courses = courses;
-          // The Diganta site always includes its six established courses.
-          // This also repairs browsers that cached the older three-course set.
-          if (!this.currentOwnerEmail.includes('poulami')) {
+          // The Diganta site includes its established courses
+          const isDiganta = this.currentAcademySlug === 'diganta' || this.currentAcademySlug === 'prantik' || this.currentOwnerEmail === 'rcavirup@gmail.com';
+          if (isDiganta) {
             const cloudCourseIds = new Set(this.courses.map(course => course.id));
             DEFAULT_PUBLIC_COURSES.forEach(course => {
               if (!cloudCourseIds.has(course.id)) this.courses.push({ ...course });
@@ -438,7 +571,8 @@ class PublicAcademyApp {
 
         if (Array.isArray(students)) {
           localStorage.setItem(this.getStorageKey(STORAGE_KEYS.STUDENTS), JSON.stringify(students));
-          await this.openCertificateFromVerificationLink(students);
+          await this.openCertificateFromVerificationLink(students, true);
+          await this.openMarksheetFromVerificationLink(students, true);
         }
 
         // Remove tenantGuard if it was an unverified custom subdomain
@@ -451,29 +585,59 @@ class PublicAcademyApp {
       }
     } catch (e) {
       console.error('[PublicApp] fetchCloudData error:', e);
+      if (!this._verificationLinkHandled) {
+        await this.openCertificateFromVerificationLink([], true);
+      }
+      if (!this._marksheetVerificationLinkHandled) {
+        await this.openMarksheetFromVerificationLink([], true);
+      }
     }
     return false;
   }
 
-  async openCertificateFromVerificationLink(students) {
+  async openCertificateFromVerificationLink(students, isFinal = false) {
     if (this._verificationLinkHandled) return;
-    const certificateId = new URLSearchParams(window.location.search).get('certificate');
-    if (!certificateId) return;
-    this._verificationLinkHandled = true;
-    this.switchView('certificate', false);
+    let searchStr = window.location.search;
+    if (!searchStr && window.location.hash.includes('?')) {
+      searchStr = window.location.hash.slice(window.location.hash.indexOf('?'));
+    }
+    const params = new URLSearchParams(searchStr || window.location.search);
+    const rawCertId = params.get('c') || params.get('cert') || params.get('certificate');
+    if (!rawCertId) return;
 
-    const student = students.find(item => String(item.id) === certificateId);
+    this.switchView('certificate', false);
+    if (!window.location.hash.includes('certificate')) {
+      window.history.replaceState(null, '', `#certificate${searchStr ? (searchStr.startsWith('?') ? searchStr : '?' + searchStr) : ''}`);
+    }
+
+    const targetId = decodeURIComponent(rawCertId).trim().toLowerCase();
+    const student = (students || []).find(item => {
+      const id = String(item.id || '').trim().toLowerCase();
+      const reg = String(item.regNo || '').trim().toLowerCase();
+      const serial = String(item.certificateSerial || '').trim().toLowerCase();
+      return id === targetId || reg === targetId || serial === targetId;
+    });
+
     if (!student) {
-      if (this.certSearchForm) this.certSearchForm.style.display = '';
-      if (this.certResultContainer) this.certResultContainer.style.display = 'none';
-      if (this.certNotFoundState) this.certNotFoundState.style.display = 'flex';
+      if (isFinal) {
+        this._verificationLinkHandled = true;
+        if (this.certSearchForm) this.certSearchForm.style.display = '';
+        if (this.certResultContainer) this.certResultContainer.style.display = 'none';
+        if (this.certIncompleteState) this.certIncompleteState.style.display = 'none';
+        if (this.certNotFoundState) {
+          this.certNotFoundState.style.display = 'flex';
+          this.certNotFoundState.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
       return;
     }
+    this._verificationLinkHandled = true;
     await this.showCertificateResult(student);
   }
 
   async showCertificateResult(student) {
-    if (student.status !== 'Completed') {
+    const isCompleted = String(student.status || '').toLowerCase() === 'completed' || Boolean(student.certificateIssueDate) || Boolean(student.grade);
+    if (!isCompleted) {
       if (this.certSearchForm) this.certSearchForm.style.display = '';
       if (this.certResultContainer) this.certResultContainer.style.display = 'none';
       if (this.certNotFoundState) this.certNotFoundState.style.display = 'none';
@@ -482,19 +646,92 @@ class PublicAcademyApp {
           this.certIncompleteDesc.textContent = `Hello, ${toTitleCase(student.name)}, your certificate is not available at this moment.`;
         }
         this.certIncompleteState.style.display = 'flex';
+        this.certIncompleteState.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
       return;
     }
 
     if (this.certNotFoundState) this.certNotFoundState.style.display = 'none';
     if (this.certIncompleteState) this.certIncompleteState.style.display = 'none';
-    const courseId = (student.enrolledCourseIds && student.enrolledCourseIds[0]) || '';
+    const courseId = (student.enrolledCourseIds && student.enrolledCourseIds[0]) || student.courseId || '';
     const course = this.courses.find(item => item.id === courseId);
-    await window.CertificateCanvas.render(student, course);
+    if (window.CertificateCanvas) {
+      await window.CertificateCanvas.render(student, course);
+    }
     if (this.certResultContainer) {
       if (this.certSearchForm) this.certSearchForm.style.display = 'none';
       this.certResultContainer.style.display = 'block';
       this.certResultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  async openMarksheetFromVerificationLink(students, isFinal = false) {
+    if (this._marksheetVerificationLinkHandled) return;
+    let searchStr = window.location.search;
+    if (!searchStr && window.location.hash.includes('?')) {
+      searchStr = window.location.hash.slice(window.location.hash.indexOf('?'));
+    }
+    const params = new URLSearchParams(searchStr || window.location.search);
+    const rawMarksheetId = params.get('m') || params.get('mark') || params.get('marksheet');
+    if (!rawMarksheetId) return;
+
+    this.switchView('marksheet', false);
+    if (!window.location.hash.includes('marksheet')) {
+      window.history.replaceState(null, '', `#marksheet${searchStr ? (searchStr.startsWith('?') ? searchStr : '?' + searchStr) : ''}`);
+    }
+
+    const targetId = decodeURIComponent(rawMarksheetId).trim().toLowerCase();
+    const student = (students || []).find(item => {
+      const id = String(item.id || '').trim().toLowerCase();
+      const reg = String(item.regNo || '').trim().toLowerCase();
+      const serial = String(item.certificateSerial || '').trim().toLowerCase();
+      return id === targetId || reg === targetId || serial === targetId;
+    });
+
+    if (!student) {
+      if (isFinal) {
+        this._marksheetVerificationLinkHandled = true;
+        if (this.marksheetSearchForm) this.marksheetSearchForm.style.display = '';
+        if (this.marksheetResultContainer) this.marksheetResultContainer.style.display = 'none';
+        if (this.marksheetIncompleteState) this.marksheetIncompleteState.style.display = 'none';
+        if (this.marksheetNotFoundState) {
+          this.marksheetNotFoundState.style.display = 'flex';
+          this.marksheetNotFoundState.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+      return;
+    }
+    this._marksheetVerificationLinkHandled = true;
+    await this.showMarksheetResult(student);
+  }
+
+  async showMarksheetResult(student) {
+    const isCompleted = String(student.status || '').toLowerCase() === 'completed' || Boolean(student.certificateIssueDate) || Boolean(student.grade);
+    if (!isCompleted) {
+      if (this.marksheetSearchForm) this.marksheetSearchForm.style.display = '';
+      if (this.marksheetResultContainer) this.marksheetResultContainer.style.display = 'none';
+      if (this.marksheetNotFoundState) this.marksheetNotFoundState.style.display = 'none';
+      if (this.marksheetIncompleteState) {
+        if (this.marksheetIncompleteDesc) {
+          this.marksheetIncompleteDesc.textContent = `Hello, ${toTitleCase(student.name)}, your marksheet is not available at this moment.`;
+        }
+        this.marksheetIncompleteState.style.display = 'flex';
+        this.marksheetIncompleteState.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+
+    if (this.marksheetNotFoundState) this.marksheetNotFoundState.style.display = 'none';
+    if (this.marksheetIncompleteState) this.marksheetIncompleteState.style.display = 'none';
+    const courseId = (student.enrolledCourseIds && student.enrolledCourseIds[0]) || student.courseId || '';
+    const course = this.courses.find(item => item.id === courseId);
+    if (window.MarksheetCanvas) {
+      await window.MarksheetCanvas.render(student, course);
+    }
+    if (this.marksheetResultContainer) {
+      if (this.marksheetSearchForm) this.marksheetSearchForm.style.display = 'none';
+      this.marksheetResultContainer.style.display = 'block';
+      this.marksheetResultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
 
@@ -555,8 +792,14 @@ class PublicAcademyApp {
   }
 
   bindEvents() {
-    // Keep an already-open public tab in sync with course changes made in Admin.
+    // Keep an already-open public tab in sync with course and profile changes made in Admin.
     window.addEventListener('storage', (event) => {
+      if (event.key === this.getStorageKey(STORAGE_KEYS.ACADEMY_PROFILE) && event.newValue) {
+        try {
+          this.academyProfile = JSON.parse(event.newValue);
+          this.renderBranding();
+        } catch (e) {}
+      }
       if (event.key !== this.getStorageKey(STORAGE_KEYS.COURSES) || event.newValue === null) return;
       try {
         this.courses = JSON.parse(event.newValue) || [];
@@ -603,10 +846,92 @@ class PublicAcademyApp {
       });
     }
 
+    const collapseStudentDropdown = () => {
+      if (this.navStudentDropdownItem) {
+        this.navStudentDropdownItem.classList.remove('open');
+        this.navStudentDropdownItem.classList.add('collapsed');
+      }
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
+    };
+
+    if (this.navStudentDropdownItem) {
+      this.navStudentDropdownItem.addEventListener('mouseleave', () => {
+        this.navStudentDropdownItem.classList.remove('collapsed');
+      });
+      this.navStudentDropdownItem.addEventListener('mouseenter', () => {
+        this.navStudentDropdownItem.classList.remove('collapsed');
+      });
+    }
+
     if (this.navStudentLink) {
+      this.navStudentLink.addEventListener('mouseenter', () => {
+        this.navStudentDropdownItem?.classList.remove('collapsed');
+      });
       this.navStudentLink.addEventListener('click', (e) => {
         e.preventDefault();
+        if (this.navStudentDropdownItem) {
+          this.navStudentDropdownItem.classList.remove('collapsed');
+          this.navStudentDropdownItem.classList.toggle('open');
+        }
+      });
+    }
+
+    document.addEventListener('click', (e) => {
+      if (this.navStudentDropdownItem && !this.navStudentDropdownItem.contains(e.target)) {
+        this.navStudentDropdownItem.classList.remove('open');
+      }
+    });
+
+    if (this.navSubStudentReg) {
+      this.navSubStudentReg.addEventListener('click', (e) => {
+        e.preventDefault();
+        collapseStudentDropdown();
         this.switchView('student');
+      });
+    }
+
+    if (this.navSubStudentVerify) {
+      this.navSubStudentVerify.addEventListener('click', (e) => {
+        e.preventDefault();
+        collapseStudentDropdown();
+        this.switchView('student-verification');
+      });
+    }
+
+    // Student Verification Handlers
+    if (this.studentVerifySearchForm) {
+      this.studentVerifySearchForm.addEventListener('submit', (e) => this.handleStudentVerificationSearch(e));
+      this.studentVerifySearchForm.addEventListener('input', (e) => {
+        e.target?.classList.remove('input-error');
+        if (e.target === this.verifyPhone && this.verifyPhoneError) this.verifyPhoneError.style.display = 'none';
+        if (e.target === this.verifyDob && this.verifyDobError) this.verifyDobError.style.display = 'none';
+      });
+    }
+
+    if (this.btnResetStudentVerifySearch) {
+      this.btnResetStudentVerifySearch.addEventListener('click', () => {
+        if (this.studentVerifySearchForm) {
+          this.studentVerifySearchForm.style.display = '';
+          this.studentVerifySearchForm.reset();
+        }
+        if (this.studentVerifyResultContainer) this.studentVerifyResultContainer.style.display = 'none';
+        if (this.studentVerifyNotFoundState) this.studentVerifyNotFoundState.style.display = 'none';
+      });
+    }
+
+    if (this.btnPrintStudentVerifySlip) {
+      this.btnPrintStudentVerifySlip.addEventListener('click', () => {
+        window.print();
+      });
+    }
+
+    if (this.navSubMarksheetDownload) {
+      this.navSubMarksheetDownload.addEventListener('click', (e) => {
+        e.preventDefault();
+        collapseStudentDropdown();
+        this.switchView('marksheet');
       });
     }
 
@@ -629,15 +954,104 @@ class PublicAcademyApp {
       });
     }
 
+    // Marksheet Search Handlers
+    if (this.marksheetSearchForm) {
+      this.marksheetSearchForm.addEventListener('submit', (e) => this.handleMarksheetSearch(e));
+      this.marksheetSearchForm.addEventListener('input', (e) => {
+        e.target?.classList.remove('input-error');
+        if (e.target === this.marksheetDob && this.marksheetDobError) this.marksheetDobError.style.display = 'none';
+      });
+    }
+
+    if (this.btnResetMarksheetSearch) {
+      this.btnResetMarksheetSearch.addEventListener('click', () => {
+        this._marksheetVerificationLinkHandled = false;
+        try {
+          const cleanUrl = window.location.pathname + (window.location.hash ? window.location.hash.split('?')[0] : '');
+          window.history.replaceState({}, document.title, cleanUrl);
+        } catch {}
+        if (this.marksheetSearchForm) {
+          this.marksheetSearchForm.style.display = '';
+          this.marksheetSearchForm.classList.remove('cert-search-returning');
+          void this.marksheetSearchForm.offsetWidth;
+          this.marksheetSearchForm.classList.add('cert-search-returning');
+          this.marksheetSearchForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          window.setTimeout(() => this.marksheetSearchForm?.classList.remove('cert-search-returning'), 550);
+          this.marksheetSearchForm.reset();
+        }
+        if (this.marksheetResultContainer) this.marksheetResultContainer.style.display = 'none';
+        if (this.marksheetNotFoundState) this.marksheetNotFoundState.style.display = 'none';
+        if (this.marksheetIncompleteState) this.marksheetIncompleteState.style.display = 'none';
+        if (window.MarksheetCanvas) window.MarksheetCanvas.clear();
+        if (this.marksheetPhone) {
+          this.marksheetPhone.classList.remove('input-error');
+          this.marksheetPhone.focus({ preventScroll: true });
+        }
+        if (this.marksheetPhoneError) this.marksheetPhoneError.style.display = 'none';
+        if (this.marksheetDob) this.marksheetDob.classList.remove('input-error');
+        if (this.marksheetDobError) this.marksheetDobError.style.display = 'none';
+      });
+    }
+
+    if (this.btnDownloadMarksheet) {
+      this.btnDownloadMarksheet.addEventListener('click', () => {
+        if (window.MarksheetCanvas) {
+          window.MarksheetCanvas.downloadActiveMarksheet();
+        }
+      });
+    }
+
+    if (this.btnPrintMarksheet) {
+      this.btnPrintMarksheet.addEventListener('click', () => {
+        window.print();
+      });
+    }
+
     // Hash Change
     window.addEventListener('hashchange', () => {
-      const hash = window.location.hash.replace('#', '');
-      if (hash === 'courses') {
+      let searchStr = window.location.search;
+      if (!searchStr && window.location.hash.includes('?')) {
+        searchStr = window.location.hash.slice(window.location.hash.indexOf('?'));
+      }
+      const params = new URLSearchParams(searchStr || window.location.search);
+      const hasCertParam = Boolean(params.get('c') || params.get('cert') || params.get('certificate'));
+      const hasMarksheetParam = Boolean(params.get('m') || params.get('mark') || params.get('marksheet'));
+
+      const hash = window.location.hash.replace('#', '').split('?')[0];
+      if (hasCertParam) {
+        this.switchView('certificate', false);
+        const rawStudents = localStorage.getItem(this.getStorageKey(STORAGE_KEYS.STUDENTS));
+        if (rawStudents) {
+          try {
+            const cachedStudents = JSON.parse(rawStudents);
+            if (Array.isArray(cachedStudents) && cachedStudents.length > 0) {
+              this._verificationLinkHandled = false;
+              this.openCertificateFromVerificationLink(cachedStudents, true);
+            }
+          } catch (e) {}
+        }
+      } else if (hasMarksheetParam) {
+        this.switchView('marksheet', false);
+        const rawStudents = localStorage.getItem(this.getStorageKey(STORAGE_KEYS.STUDENTS));
+        if (rawStudents) {
+          try {
+            const cachedStudents = JSON.parse(rawStudents);
+            if (Array.isArray(cachedStudents) && cachedStudents.length > 0) {
+              this._marksheetVerificationLinkHandled = false;
+              this.openMarksheetFromVerificationLink(cachedStudents, true);
+            }
+          } catch (e) {}
+        }
+      } else if (hash === 'courses') {
         this.switchView('courses', false);
-      } else if (hash === 'student' || hash === 'registration') {
+      } else if (hash === 'student' || hash === 'student-registration' || hash === 'registration') {
         this.switchView('student', false);
+      } else if (hash === 'student-verification' || hash === 'verification') {
+        this.switchView('student-verification', false);
       } else if (hash === 'certificate') {
         this.switchView('certificate', false);
+      } else if (hash === 'marksheet' || hash === 'marksheet-download') {
+        this.switchView('marksheet', false);
       } else if (hash === 'about') {
         this.switchView('about', false);
       } else if (hash === 'home' || hash === '') {
@@ -681,6 +1095,11 @@ class PublicAcademyApp {
     // Certificate Reset / Print Buttons
     if (this.btnResetCertSearch) {
       this.btnResetCertSearch.addEventListener('click', () => {
+        this._verificationLinkHandled = false;
+        try {
+          const cleanUrl = window.location.pathname + (window.location.hash ? window.location.hash.split('?')[0] : '');
+          window.history.replaceState({}, document.title, cleanUrl);
+        } catch {}
         if (this.certSearchForm) {
           this.certSearchForm.style.display = '';
           this.certSearchForm.classList.remove('cert-search-returning');
@@ -1086,6 +1505,9 @@ class PublicAcademyApp {
 
   switchView(viewName, updateHash = true) {
     if (this.isNotFound) return;
+    if (viewName === 'about' && this.academyProfile?.sectionVisibility?.about === false) {
+      viewName = 'home';
+    }
     this.currentView = viewName;
 
     // Update Nav Active State
@@ -1098,8 +1520,18 @@ class PublicAcademyApp {
     if (this.navAboutLink) {
       this.navAboutLink.classList.toggle('active', viewName === 'about');
     }
+    const isStudentFamily = (viewName === 'student' || viewName === 'student-verification' || viewName === 'marksheet');
     if (this.navStudentLink) {
-      this.navStudentLink.classList.toggle('active', viewName === 'student');
+      this.navStudentLink.classList.toggle('active', isStudentFamily);
+    }
+    if (this.navSubStudentReg) {
+      this.navSubStudentReg.classList.toggle('active', viewName === 'student');
+    }
+    if (this.navSubStudentVerify) {
+      this.navSubStudentVerify.classList.toggle('active', viewName === 'student-verification');
+    }
+    if (this.navSubMarksheetDownload) {
+      this.navSubMarksheetDownload.classList.toggle('active', viewName === 'marksheet');
     }
     if (this.navCertificateLink) {
       this.navCertificateLink.classList.toggle('active', viewName === 'certificate');
@@ -1122,9 +1554,17 @@ class PublicAcademyApp {
       this.viewStudent.style.display = viewName === 'student' ? 'block' : 'none';
       this.viewStudent.classList.toggle('active', viewName === 'student');
     }
+    if (this.viewStudentVerification) {
+      this.viewStudentVerification.style.display = viewName === 'student-verification' ? 'block' : 'none';
+      this.viewStudentVerification.classList.toggle('active', viewName === 'student-verification');
+    }
     if (this.viewCertificate) {
       this.viewCertificate.style.display = viewName === 'certificate' ? 'block' : 'none';
       this.viewCertificate.classList.toggle('active', viewName === 'certificate');
+    }
+    if (this.viewMarksheet) {
+      this.viewMarksheet.style.display = viewName === 'marksheet' ? 'block' : 'none';
+      this.viewMarksheet.classList.toggle('active', viewName === 'marksheet');
     }
     if (this.viewNotFound) {
       this.viewNotFound.classList.remove('active');
@@ -1136,11 +1576,21 @@ class PublicAcademyApp {
       this.navMenu.classList.remove('active');
     }
 
+    // Collapse Student Dropdown
+    if (this.navStudentDropdownItem) {
+      this.navStudentDropdownItem.classList.remove('open');
+      this.navStudentDropdownItem.classList.remove('collapsed');
+    }
+
     if (updateHash) {
       window.location.hash = viewName;
     }
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (window.lazyScroll) {
+      window.lazyScroll.scrollTo(0, true);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 
   renderBranding() {
@@ -1148,10 +1598,10 @@ class PublicAcademyApp {
     const name = profile.academyName || 'Academy';
     
     // 0. Top Notice Ticker
-    const notice1Text = `Notice: Admissions Open for ${name} 2026 Academic Batches`;
-    const notice2Text = `Fast-Track Student Verification & Official Certification Active`;
-    const primaryPhone = profile.phone || '9733894742';
-    const notice3Text = `Contact Admissions Helpline: +91 ${primaryPhone}`;
+    const notice1Text = profile.notice1Text || `Notice: Admissions Open for ${name} 2026 Academic Batches`;
+    const notice2Text = profile.notice2Text || `Fast-Track Student Verification & Official Certification Active`;
+    const primaryPhone = profile.bannerPhone || profile.phone || '9733894742';
+    const notice3Text = profile.notice3Text || `Contact Admissions Helpline: +91 ${primaryPhone}`;
 
     if (this.noticeLink1) this.noticeLink1.textContent = notice1Text;
     if (this.noticeLink1B) this.noticeLink1B.textContent = notice1Text;
@@ -1160,38 +1610,119 @@ class PublicAcademyApp {
     if (this.noticeLink3) this.noticeLink3.textContent = notice3Text;
     if (this.noticeLink3B) this.noticeLink3B.textContent = notice3Text;
 
+    // 0B. Top White Badge Banner
+    const badgeBannerEl = document.getElementById('topBadgeBanner');
+    if (badgeBannerEl) {
+      const estEl = badgeBannerEl.querySelector('.badge-est-text');
+      if (estEl) estEl.textContent = profile.estYear ? `EST. ${profile.estYear}` : 'EST. 2005';
+      const tagEl = badgeBannerEl.querySelector('.badge-tagline-text');
+      if (tagEl) tagEl.textContent = profile.bannerTagline || 'Building Skills. Creating Futures.';
+      const callEl = badgeBannerEl.querySelector('.badge-call-details strong');
+      if (callEl) callEl.textContent = profile.bannerPhone || primaryPhone;
+      const callLink = badgeBannerEl.querySelector('.badge-admission-call');
+      if (callLink) callLink.href = `tel:${profile.bannerPhone || primaryPhone}`;
+    }
+
     // 1. Navbar & Brand Headings
     if (this.navAcademyName) this.navAcademyName.textContent = name;
     if (this.footerAcademyName) this.footerAcademyName.textContent = name;
-    if (this.footerCopyrightName) this.footerCopyrightName.textContent = name;
+    if (this.footerCopyrightName) this.footerCopyrightName.textContent = profile.footerCopyright ? profile.footerCopyright.replace(/^©\s*\d{4}\s*/, '').replace(/\.\s*All rights reserved\.?$/i, '') : name;
     if (this.certDocAcademyName) this.certDocAcademyName.textContent = name;
     document.title = `${name} | Public Admissions Portal`;
+
+    // Brand Logo & Favicon
+    if (profile.logoUrl) {
+      const heroLogoImg = document.getElementById('heroLogoImg');
+      if (heroLogoImg) heroLogoImg.src = profile.logoUrl;
+    }
+    if (profile.faviconUrl) {
+      let fav = document.querySelector('link[rel="icon"]');
+      if (!fav) {
+        fav = document.createElement('link');
+        fav.rel = 'icon';
+        document.head.appendChild(fav);
+      }
+      fav.href = profile.faviconUrl;
+    }
 
     // Hero 2-Liner Title without "Welcome to"
     const heroLine1El = document.getElementById('heroTitleLine1');
     const heroLine2El = document.getElementById('heroTitleLine2');
     if (heroLine1El && heroLine2El) {
-      const parts = name.trim().split(/\s+/);
-      if (parts.length > 1) {
-        heroLine1El.textContent = parts[0].toUpperCase();
-        heroLine2El.textContent = parts.slice(1).join(' ');
+      const line1 = typeof profile.heroTitleLine1 === 'string' ? profile.heroTitleLine1.trim() : '';
+      const line2 = typeof profile.heroTitleLine2 === 'string' ? profile.heroTitleLine2.trim() : '';
+
+      if (line1 || line2) {
+        heroLine1El.textContent = line1;
+        heroLine1El.style.display = line1 ? '' : 'none';
+        heroLine2El.textContent = line2;
+        heroLine2El.style.display = line2 ? '' : 'none';
+        heroLine2El.style.marginTop = line1 ? '' : '0';
       } else {
-        heroLine1El.textContent = name.toUpperCase();
-        heroLine2El.textContent = 'Computer Centre';
+        heroLine1El.style.display = '';
+        heroLine2El.style.display = '';
+        heroLine2El.style.marginTop = '';
+        const parts = name.trim().split(/\s+/);
+        if (parts.length > 1) {
+          heroLine1El.textContent = parts[0].toUpperCase();
+          heroLine2El.textContent = parts.slice(1).join(' ');
+        } else {
+          heroLine1El.textContent = name.toUpperCase();
+          heroLine2El.textContent = 'Computer Centre';
+        }
       }
     } else if (this.heroAcademyName) {
       this.heroAcademyName.textContent = name;
     }
 
-    // 2. Hero Tagline & Subtitle
+    // 2. Hero Tagline & Subtitle & Slide Images
     if (this.heroTaglineText) {
-      this.heroTaglineText.textContent = profile.tagline || 'Admissions & Registrations Open';
+      this.heroTaglineText.textContent = profile.tagline || 'Student Registration';
     }
     if (this.heroDescText) {
-      this.heroDescText.textContent = profile.heroDesc || profile.about || 'Empowering learners with industry-standard courses and certified training.';
+      if (profile.heroDesc !== undefined && profile.heroDesc !== null) {
+        const desc = profile.heroDesc.trim();
+        this.heroDescText.textContent = desc;
+        this.heroDescText.style.display = desc ? '' : 'none';
+      } else {
+        this.heroDescText.textContent = 'Empowering learners with industry-standard courses and certified training.';
+        this.heroDescText.style.display = '';
+      }
+    }
+    // Hero dissolving photos loop (supports up to 5 loop photos)
+    const heroChevronInner = document.getElementById('heroChevronInner') || document.querySelector('.hero-chevron-inner');
+    let heroPhotos = [];
+    if (Array.isArray(profile.heroPhotos)) {
+      heroPhotos = profile.heroPhotos.filter(Boolean).slice(0, 5);
+    } else {
+      const legacy = [profile.heroImg1, profile.heroImg2].filter(Boolean);
+      if (legacy.length > 0) heroPhotos = legacy.slice(0, 5);
     }
 
-    // 3. About Us View Personalisation
+    if (heroChevronInner && heroPhotos.length > 0) {
+      heroChevronInner.innerHTML = heroPhotos.map((url, idx) => `
+        <img 
+          id="heroImg${idx + 1}" 
+          class="hero-chevron-slide${idx === 0 ? ' active' : ''}" 
+          src="${escapeHtml(url)}" 
+          alt="${escapeHtml(name)} Hero Slide ${idx + 1}" 
+          loading="${idx === 0 ? 'eager' : 'lazy'}"
+        />
+      `).join('');
+      this.initHeroCarousel();
+    }
+
+    // 3. Approvals & Accreditation Logos
+    const approvalLogos = document.querySelector('.approval-logos');
+    if (approvalLogos && Array.isArray(profile.accreditationUrls) && profile.accreditationUrls.length > 0) {
+      approvalLogos.innerHTML = profile.accreditationUrls.map(url => `
+        <div class="approval-logo-card">
+          <img src="${escapeHtml(url)}" alt="Accreditation Certification Logo" loading="lazy">
+        </div>
+      `).join('');
+    }
+
+    // 4. About Us View Personalisation
     if (this.aboutCategoryBadge) {
       this.aboutCategoryBadge.textContent = profile.category ? `Certified in ${profile.category}` : 'Certified Professional Training Institute';
     }
@@ -1202,13 +1733,17 @@ class PublicAcademyApp {
       this.aboutSubHeadlineDisplay.textContent = profile.category ? `Premier Institute for ${profile.category} Education & Certification` : 'Dedicated to career-transforming training and industry skills.';
     }
     if (this.aboutStoryDirector) {
-      this.aboutStoryDirector.textContent = profile.ownerName ? `Supervised & Directed by ${profile.ownerName}` : 'Authorized Academy Administration';
+      this.aboutStoryDirector.textContent = profile.aboutDirector || (profile.ownerName ? `Supervised & Directed by ${profile.ownerName}` : 'Authorized Academy Administration');
     }
     if (this.aboutStoryTextDisplay) {
       this.aboutStoryTextDisplay.textContent = profile.aboutStory || profile.about || `${name} is a premier training academy offering comprehensive hands-on certification programs designed to build high-demand industry skills.`;
     }
+    if (profile.aboutStoryImg) {
+      const storyImg = document.querySelector('.about-story-image img');
+      if (storyImg) storyImg.src = profile.aboutStoryImg;
+    }
 
-    // 4. Highlights Grid
+    // 5. Highlights Grid
     if (this.aboutHighlightsGrid) {
       const defaultHighlights = [
         { icon: 'fa-user-tie', title: 'Certified Expert Faculty', desc: 'Personalized mentoring from seasoned industry instructors.' },
@@ -1238,7 +1773,19 @@ class PublicAcademyApp {
       }).join('');
     }
 
-    // 5. Contact & Location Information
+    // 6. Gallery
+    const galleryHeading = document.getElementById('galleryHeading');
+    if (galleryHeading && profile.galleryHeading) galleryHeading.textContent = profile.galleryHeading;
+    const gallerySubtitle = document.querySelector('.home-gallery-inner .section-subtitle');
+    if (gallerySubtitle && profile.gallerySubtitle) gallerySubtitle.textContent = profile.gallerySubtitle;
+    const galleryGrid = document.querySelector('.gallery-grid');
+    if (galleryGrid && Array.isArray(profile.galleryUrls) && profile.galleryUrls.length > 0) {
+      galleryGrid.innerHTML = profile.galleryUrls.map((url, i) => `
+        <figure class="gallery-item"><img src="${escapeHtml(url)}" alt="${escapeHtml(name)} gallery photo ${i + 1}" loading="lazy"></figure>
+      `).join('');
+    }
+
+    // 7. Contact, Branches & Location Information
     if (this.aboutPhoneLink) {
       this.aboutPhoneLink.textContent = `+91 ${primaryPhone}`;
       this.aboutPhoneLink.href = `tel:${primaryPhone}`;
@@ -1271,13 +1818,97 @@ class PublicAcademyApp {
       this.footerEmailLink.querySelector('span').textContent = email;
     }
 
+    // Branch Cards
+    if (profile.branch1) {
+      const b1 = document.querySelector('.branch-cards .branch-card:nth-child(1)');
+      if (b1) {
+        const parts = profile.branch1.split('—').map(p => p.trim());
+        const h3 = b1.querySelector('h3');
+        const p = b1.querySelector('p');
+        if (h3) h3.textContent = parts[0] || profile.branch1;
+        if (p) p.textContent = parts[1] || '';
+      }
+    }
+    if (profile.branch2) {
+      const b2 = document.querySelector('.branch-cards .branch-card:nth-child(2)');
+      if (b2) {
+        const parts = profile.branch2.split('—').map(p => p.trim());
+        const h3 = b2.querySelector('h3');
+        const p = b2.querySelector('p');
+        if (h3) h3.textContent = parts[0] || profile.branch2;
+        if (p) p.textContent = parts[1] || '';
+      }
+    }
+
     const addressParts = [profile.address, profile.pincode ? `PIN: ${profile.pincode}` : ''].filter(Boolean);
     if (this.aboutAddressDisplay) {
-           this.aboutAddressDisplay.textContent = addressParts.length > 0 ? addressParts.join(', ') : 'Main Campus Admissions Center';
+      this.aboutAddressDisplay.textContent = addressParts.length > 0 ? addressParts.join(', ') : 'Main Campus Admissions Center';
     }
     if (this.footerAddress) {
       this.footerAddress.textContent = addressParts.length > 0 ? addressParts.join(', ') : 'West Bengal, India';
     }
+    const mapIframe = document.querySelector('.contact-map-card iframe');
+    if (mapIframe && profile.mapUrl) {
+      mapIframe.src = profile.mapUrl;
+    }
+
+    // 8. Connect & Social Media
+    const socials = profile.socials || {};
+    const waNumber = socials.whatsapp || profile.whatsapp || secondaryPhone || primaryPhone;
+    const waLink = document.querySelector('.contact-quick-links a[href*="wa.me"]');
+    if (waLink && waNumber) {
+      const cleanWa = waNumber.replace(/\D/g, '');
+      waLink.href = `https://wa.me/91${cleanWa}`;
+    }
+    const fbLink = document.querySelector('.contact-social-icons a[href*="facebook"]');
+    if (fbLink && socials.facebook) fbLink.href = socials.facebook;
+    const igLink = document.querySelector('.contact-social-icons a[href*="instagram"]');
+    if (igLink && socials.instagram) igLink.href = socials.instagram;
+    const ytLink = document.querySelector('.contact-social-icons a[href*="youtube"]');
+    if (ytLink && socials.youtube) ytLink.href = socials.youtube;
+
+    // 9. Footer Bio & Social Proof
+    const footerBio = document.querySelector('.footer-brand-column > p');
+    if (footerBio && profile.footerBio) footerBio.textContent = profile.footerBio;
+    const footerProof = document.querySelector('.footer-social-proof');
+    if (footerProof && profile.footerProof) {
+      footerProof.innerHTML = `<i class="fa-solid fa-shield-halved"></i> ${escapeHtml(profile.footerProof)}`;
+    }
+
+    // 10. Apply Section Visibility (Hide/Unhide sections)
+    this.applySectionVisibility();
+  }
+
+  applySectionVisibility() {
+    const profile = this.academyProfile || {};
+    const visibility = profile.sectionVisibility || {};
+
+    const sectionMap = {
+      hero: ['#heroSection'],
+      banner: ['#topNoticeBar', '#topBadgeBanner'],
+      about: ['.home-experience-section', '.home-journey-section', '#navAboutLink', 'a[href="#about"]'],
+      accreditations: ['.home-trust-strip', '.home-approvals'],
+      gallery: ['.home-gallery-section'],
+      contact: ['#contact', 'a[href="#contact"]'],
+      socials: ['.home-connect-section'],
+      footer: ['.public-footer']
+    };
+
+    Object.entries(sectionMap).forEach(([key, selectors]) => {
+      const isVisible = visibility[key] !== false;
+      selectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => {
+          if (!isVisible) {
+            el.classList.add('is-section-hidden');
+          } else {
+            el.classList.remove('is-section-hidden');
+          }
+        });
+      });
+    });
+
+    const preload = document.getElementById('visibilityPreload');
+    if (preload) preload.remove();
   }
 
   render() {
@@ -2008,6 +2639,283 @@ class PublicAcademyApp {
     }
   }
 
+  // ==========================================================================
+  // Student Profile Verification Handler (Mobile & DOB -> Details + Photo)
+  // ==========================================================================
+  async handleStudentVerificationSearch(e) {
+    e.preventDefault();
+
+    const phone = this.verifyPhone ? this.verifyPhone.value.trim().replace(/\D/g, '') : '';
+    const dob = this.verifyDob ? this.verifyDob.value.trim() : '';
+
+    if (this.verifyPhone) this.verifyPhone.classList.toggle('input-error', !phone);
+    if (this.verifyDob) this.verifyDob.classList.toggle('input-error', !dob);
+
+    if (this.verifyPhoneError) {
+      this.verifyPhoneError.textContent = 'Please enter a valid 10-digit mobile number.';
+      this.verifyPhoneError.style.display = phone ? 'none' : 'block';
+    }
+    if (this.verifyDobError) {
+      this.verifyDobError.style.display = dob ? 'none' : 'block';
+    }
+
+    if (!phone || !dob) {
+      const firstMissing = !phone ? this.verifyPhone : this.verifyDob;
+      firstMissing?.focus();
+      this.showToast('Please enter both Mobile Number and Date of Birth.', 'error');
+      return;
+    }
+
+    if (phone.length !== 10 || !/^\d{10}$/.test(phone)) {
+      if (this.verifyPhone) this.verifyPhone.classList.add('input-error');
+      if (this.verifyPhoneError) {
+        this.verifyPhoneError.textContent = 'Please enter a valid 10-digit mobile number.';
+        this.verifyPhoneError.style.display = 'block';
+      }
+      this.verifyPhone?.focus();
+      this.showToast('Mobile number must be exactly 10 digits.', 'error');
+      return;
+    }
+
+    if (this.btnSearchStudentVerify) {
+      this.btnSearchStudentVerify.disabled = true;
+      this.btnSearchStudentVerify.innerHTML = '<span class="registration-spinner" aria-hidden="true"></span> Verifying...';
+    }
+
+    try {
+      if (this.studentVerifyResultContainer) this.studentVerifyResultContainer.style.display = 'none';
+
+      let allStudents = [];
+      try {
+        const response = await fetch(getPublicApiUrl(`?academy=${encodeURIComponent(this.currentAcademySlug)}`), { cache: 'no-store' });
+        if (response.ok) {
+          const json = await response.json();
+          if (json?.success && Array.isArray(json.data?.students)) {
+            allStudents = json.data.students;
+            localStorage.setItem(this.getStorageKey(STORAGE_KEYS.STUDENTS), JSON.stringify(allStudents));
+          }
+        }
+      } catch (err) {}
+
+      if (allStudents.length === 0) {
+        const rawStudents = localStorage.getItem(this.getStorageKey(STORAGE_KEYS.STUDENTS));
+        if (rawStudents) {
+          try {
+            allStudents = JSON.parse(rawStudents) || [];
+          } catch (err) {
+            allStudents = [];
+          }
+        }
+      }
+
+      const student = allStudents.find(s => {
+        const sPhone = String(s.phone || '').replace(/\D/g, '');
+        const sDob = String(s.dob || '').trim();
+        return sPhone === phone && sDob === dob;
+      });
+
+      if (!student) {
+        if (this.studentVerifySearchForm) this.studentVerifySearchForm.style.display = '';
+        if (this.studentVerifyResultContainer) this.studentVerifyResultContainer.style.display = 'none';
+        if (this.studentVerifyNotFoundState) {
+          this.studentVerifyNotFoundState.style.display = 'flex';
+          this.studentVerifyNotFoundState.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+      }
+
+      if (this.studentVerifyNotFoundState) this.studentVerifyNotFoundState.style.display = 'none';
+      if (this.studentVerifySearchForm) this.studentVerifySearchForm.style.display = 'none';
+
+      // Populate Academy details
+      if (this.verifyAcademyName) {
+        this.verifyAcademyName.textContent = this.academyProfile?.academyName || 'Diganta Computer Centre';
+      }
+      if (this.verifyAcademySubtitle) {
+        this.verifyAcademySubtitle.textContent = this.academyProfile?.address || 'Authorized Training Centre • Shyampur, Howrah';
+      }
+
+      // Populate Student Details
+      const studentId = student.regNo || student.registrationNumber || student.id || student.studentId || '—';
+      const studentName = student.name || student.fullName || '—';
+      const fatherName = student.fatherName || '—';
+      const motherName = student.motherName || '—';
+      const gender = student.gender || '—';
+      const status = student.status || 'Active';
+      const joinDate = student.joinDate || student.admissionDate || student.registrationDate || student.createdAt;
+
+      const courseId = (student.enrolledCourseIds && student.enrolledCourseIds[0]) || student.courseId || '';
+      const course = this.courses.find(item => item.id === courseId);
+      const courseTitle = course ? course.title : (student.courseName || student.course || 'Enrolled Program');
+      const courseDuration = course ? course.duration : (student.duration || '1 Year');
+
+      if (this.verifyStudentId) this.verifyStudentId.textContent = studentId;
+      if (this.verifyStudentName) this.verifyStudentName.textContent = toTitleCase(studentName);
+      if (this.verifyFatherName) this.verifyFatherName.textContent = toTitleCase(fatherName);
+      if (this.verifyMotherName) this.verifyMotherName.textContent = toTitleCase(motherName);
+      if (this.verifyStudentDob) this.verifyStudentDob.textContent = student.dob ? formatCertificateDate(student.dob) : '—';
+      if (this.verifyGender) this.verifyGender.textContent = toTitleCase(gender);
+      if (this.verifyCourseName) this.verifyCourseName.textContent = courseTitle;
+      if (this.verifyCourseDuration) this.verifyCourseDuration.textContent = courseDuration;
+      if (this.verifyAdmissionDate) this.verifyAdmissionDate.textContent = joinDate ? formatCertificateDate(joinDate) : '—';
+
+      // Status Badge
+      if (this.verifyStudentStatus) {
+        this.verifyStudentStatus.textContent = status;
+        this.verifyStudentStatus.className = 'student-status-badge';
+        const lower = status.toLowerCase();
+        if (lower === 'completed') {
+          this.verifyStudentStatus.classList.add('status-completed');
+        } else if (lower === 'dropped') {
+          this.verifyStudentStatus.classList.add('status-dropped');
+        } else {
+          this.verifyStudentStatus.classList.add('status-active');
+        }
+      }
+
+      // Passport Photo & Initials Fallback
+      const photoUrl = student.photoUrl || student.photo || '';
+      const initials = getInitials(studentName);
+      if (this.verifyStudentInitials) this.verifyStudentInitials.textContent = initials;
+
+      if (this.verifyStudentPhoto && this.verifyStudentPhotoFallback) {
+        if (photoUrl) {
+          this.verifyStudentPhoto.onload = () => {
+            this.verifyStudentPhoto.style.display = 'block';
+            this.verifyStudentPhotoFallback.style.display = 'none';
+          };
+          this.verifyStudentPhoto.onerror = () => {
+            this.verifyStudentPhoto.style.display = 'none';
+            this.verifyStudentPhotoFallback.style.display = 'flex';
+          };
+          this.verifyStudentPhoto.src = photoUrl;
+        } else {
+          this.verifyStudentPhoto.style.display = 'none';
+          this.verifyStudentPhotoFallback.style.display = 'flex';
+        }
+      }
+
+      // Verification Timestamp
+      if (this.verifyTimestamp) {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        this.verifyTimestamp.textContent = `Verified Record • ${dateStr}`;
+      }
+
+      // Show Result Box
+      if (this.studentVerifyResultContainer) {
+        this.studentVerifyResultContainer.style.display = 'block';
+        this.studentVerifyResultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      this.showToast(`Student details verified for ${toTitleCase(studentName)}!`, 'success');
+    } finally {
+      if (this.btnSearchStudentVerify) {
+        this.btnSearchStudentVerify.disabled = false;
+        this.btnSearchStudentVerify.innerHTML = '<i class="fa-solid fa-user-check"></i> Verify Student Details';
+      }
+    }
+  }
+
+  // ==========================================================================
+  // Marksheet Verification & Download Handler (Requires Mobile & DOB)
+  // ==========================================================================
+  async handleMarksheetSearch(e) {
+    e.preventDefault();
+
+    const phone = this.marksheetPhone.value.trim().replace(/\D/g, '');
+    const dob = this.marksheetDob.value.trim();
+
+    this.marksheetPhone.classList.toggle('input-error', !phone);
+    this.marksheetDob.classList.toggle('input-error', !dob);
+    if (this.marksheetPhoneError) {
+      this.marksheetPhoneError.textContent = 'Please enter a valid 10-digit mobile number.';
+      this.marksheetPhoneError.style.display = phone ? 'none' : 'block';
+    }
+    if (this.marksheetDobError) this.marksheetDobError.style.display = dob ? 'none' : 'block';
+
+    if (!phone || !dob) {
+      const firstMissingField = !phone ? this.marksheetPhone : this.marksheetDob;
+      firstMissingField?.focus();
+      this.showToast('Please enter both Mobile Number and Date of Birth.', 'error');
+      return;
+    }
+
+    if (phone.length !== 10 || !/^\d{10}$/.test(phone)) {
+      this.marksheetPhone.classList.add('input-error');
+      if (this.marksheetPhoneError) {
+        this.marksheetPhoneError.textContent = 'Please enter a valid 10-digit mobile number.';
+        this.marksheetPhoneError.style.display = 'block';
+      }
+      this.marksheetPhone.focus();
+      this.showToast('Mobile number must be exactly 10 digits.', 'error');
+      return;
+    }
+
+    if (this.btnSearchMarksheet) {
+      this.btnSearchMarksheet.disabled = true;
+      this.btnSearchMarksheet.innerHTML = '<span class="registration-spinner" aria-hidden="true"></span> Verifying...';
+    }
+
+    try {
+      if (window.MarksheetCanvas) window.MarksheetCanvas.clear();
+      if (this.marksheetResultContainer) this.marksheetResultContainer.style.display = 'none';
+
+      let allStudents = [];
+      try {
+        const response = await fetch(getPublicApiUrl(`?academy=${encodeURIComponent(this.currentAcademySlug)}`), { cache: 'no-store' });
+        if (response.ok) {
+          const json = await response.json();
+          if (json?.success && Array.isArray(json.data?.students)) {
+            allStudents = json.data.students;
+            localStorage.setItem(this.getStorageKey(STORAGE_KEYS.STUDENTS), JSON.stringify(allStudents));
+          }
+        }
+      } catch (err) {}
+
+      if (allStudents.length === 0) {
+        const rawStudents = localStorage.getItem(this.getStorageKey(STORAGE_KEYS.STUDENTS));
+        if (rawStudents) {
+          try {
+            allStudents = JSON.parse(rawStudents) || [];
+          } catch (err) {
+            allStudents = [];
+          }
+        }
+      }
+
+      const student = allStudents.find(s => {
+        const sPhone = String(s.phone || '').replace(/\D/g, '');
+        const sDob = String(s.dob || '').trim();
+        return sPhone === phone && sDob === dob;
+      });
+
+      if (!student) {
+        if (this.marksheetSearchForm) this.marksheetSearchForm.style.display = '';
+        if (this.marksheetResultContainer) this.marksheetResultContainer.style.display = 'none';
+        if (this.marksheetIncompleteState) this.marksheetIncompleteState.style.display = 'none';
+        if (this.marksheetNotFoundState) {
+          this.marksheetNotFoundState.style.display = 'flex';
+          this.marksheetNotFoundState.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+      }
+
+      await this.showMarksheetResult(student);
+      if (student.status === 'Completed') {
+        this.showToast(`Marksheet verified for ${toTitleCase(student.name)}!`, 'success');
+      }
+    } catch (err) {
+      console.error('[PublicApp] handleMarksheetSearch error:', err);
+      this.showToast('An error occurred while generating the marksheet.', 'error');
+    } finally {
+      if (this.btnSearchMarksheet) {
+        this.btnSearchMarksheet.disabled = false;
+        this.btnSearchMarksheet.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Verify &amp; View Marksheet';
+      }
+    }
+  }
+
   validateAuthenticationCode(inputCode) {
     if (!inputCode) {
       return {
@@ -2130,6 +3038,14 @@ class PublicAcademyApp {
 // ==========================================================================
 // Global Formatters & Helpers
 // ==========================================================================
+function getInitials(name) {
+  if (!name) return 'SP';
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'SP';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 function toTitleCase(str) {
   if (!str) return '';
   return str
@@ -2340,7 +3256,128 @@ function setupGalleryLightbox() {
   });
 }
 
+/**
+ * ==========================================================================
+ * Lazy Scroll Engine
+ * - Smooth Lerp Momentum Wheel Scrolling (Apple-style inertial gliding)
+ * ==========================================================================
+ */
+
+class LazyScroll {
+  constructor() {
+    this.targetY = window.scrollY;
+    this.currentY = window.scrollY;
+    this.isTicking = false;
+    this.ease = 0.088; // Apple's fluid spring damping ratio
+    this.isEnabled = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Mobile touch devices already feature 120Hz native momentum scrolling
+    this.isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    if (this.isEnabled && !this.isTouch) {
+      this.bindWheel();
+    }
+    this.bindScrollSync();
+    this.bindAnchorLinks();
+  }
+
+  bindWheel() {
+    window.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      // Allow natural scroll inside overflowing containers (modal, lightbox, textarea, select, etc.)
+      let target = e.target;
+      while (target && target !== document.body && target !== document.documentElement) {
+        if (target.id === 'galleryLightbox' || target.classList?.contains('modal') || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+          return;
+        }
+        const style = window.getComputedStyle(target);
+        const overflowY = style.overflowY;
+        if ((overflowY === 'auto' || overflowY === 'scroll') && target.scrollHeight > target.clientHeight) {
+          const atTop = target.scrollTop <= 0 && e.deltaY < 0;
+          const atBottom = target.scrollTop + target.clientHeight >= target.scrollHeight - 1 && e.deltaY > 0;
+          if (!atTop && !atBottom) return;
+        }
+        target = target.parentElement;
+      }
+
+      e.preventDefault();
+
+      const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      let delta = e.deltaY;
+      if (e.deltaMode === 1) delta *= 24;
+      else if (e.deltaMode === 2) delta *= window.innerHeight;
+
+      this.targetY = Math.max(0, Math.min(maxScroll, this.targetY + delta));
+
+      if (!this.isTicking) {
+        this.isTicking = true;
+        requestAnimationFrame(this.tick.bind(this));
+      }
+    }, { passive: false });
+  }
+
+  bindScrollSync() {
+    window.addEventListener('scroll', () => {
+      if (!this.isTicking) {
+        this.targetY = window.scrollY;
+        this.currentY = window.scrollY;
+      }
+    }, { passive: true });
+  }
+
+  bindAnchorLinks() {
+    document.addEventListener('click', (e) => {
+      const anchor = e.target.closest('a[href^="#"]');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href');
+      // If it's a primary view route, let the view router handle it
+      if (['#home', '#courses', '#student', '#certificate', '#about'].includes(href)) {
+        return;
+      }
+      const targetId = href.replace(/^#/, '');
+      if (!targetId) return;
+      const targetElem = document.getElementById(targetId);
+      if (targetElem) {
+        e.preventDefault();
+        const navbarHeight = document.querySelector('.public-navbar')?.offsetHeight || 66;
+        const targetTop = targetElem.getBoundingClientRect().top + window.scrollY - navbarHeight - 16;
+        this.scrollTo(targetTop);
+      }
+    });
+  }
+
+  scrollTo(top, immediate = false) {
+    const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    const clampedTop = Math.max(0, Math.min(maxScroll, top));
+    this.targetY = clampedTop;
+    if (immediate) {
+      this.currentY = clampedTop;
+      window.scrollTo(0, clampedTop);
+    } else if (!this.isTicking) {
+      this.isTicking = true;
+      requestAnimationFrame(this.tick.bind(this));
+    }
+  }
+
+  tick() {
+    const diff = this.targetY - this.currentY;
+    if (Math.abs(diff) > 0.4) {
+      this.currentY += diff * this.ease;
+      window.scrollTo(0, this.currentY);
+      requestAnimationFrame(this.tick.bind(this));
+    } else {
+      this.currentY = this.targetY;
+      window.scrollTo(0, this.currentY);
+      this.isTicking = false;
+    }
+  }
+}
+
+const AppleSmoothScroll = LazyScroll;
+
 document.addEventListener('DOMContentLoaded', () => {
   window.publicApp = new PublicAcademyApp();
   setupGalleryLightbox();
+  window.lazyScroll = new LazyScroll();
+  window.appleSmoothScroll = window.lazyScroll;
 });
