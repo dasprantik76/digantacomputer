@@ -1774,9 +1774,13 @@ class PublicAcademyApp {
     if (gallerySubtitle && profile.gallerySubtitle) gallerySubtitle.textContent = profile.gallerySubtitle;
     const galleryGrid = document.querySelector('.gallery-grid');
     if (galleryGrid && Array.isArray(profile.galleryUrls) && profile.galleryUrls.length > 0) {
-      galleryGrid.innerHTML = profile.galleryUrls.map((url, i) => `
-        <figure class="gallery-item"><img src="${escapeHtml(url)}" alt="${escapeHtml(name)} gallery photo ${i + 1}" loading="lazy"></figure>
-      `).join('');
+      galleryGrid.innerHTML = profile.galleryUrls.map((url, i) => {
+        const cacheUrl = url.includes('?') ? `${url}&v=2` : `${url}?v=2`;
+        return `
+          <figure class="gallery-item"><img src="${escapeHtml(cacheUrl)}" alt="${escapeHtml(name)} gallery photo ${i + 1}" loading="lazy"></figure>
+        `;
+      }).join('');
+      setupGalleryLightbox();
     }
 
     // 7. Contact, Branches & Location Information
