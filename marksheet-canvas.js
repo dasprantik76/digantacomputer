@@ -662,20 +662,80 @@
   let panX = 0;
   let panY = 0;
   let isDragging = false;
-  let startX = 0;
-  let startY = 0;
+  let lastClientX = 0;
+  let lastClientY = 0;
 
-  function applyZoomTransform() {
+  function getStagePadding(stage) {
+    if (!stage) return 16;
+    try {
+      const computed = window.getComputedStyle(stage);
+      const p = parseFloat(computed.paddingTop);
+      return Number.isFinite(p) ? p : 16;
+    } catch {
+      return 16;
+    }
+  }
+
+  function clampPan(targetPanX, targetPanY, customZoom) {
+    if (!canvas) return { x: 0, y: 0 };
+    const currentZoom = customZoom !== undefined ? customZoom : zoomLevel;
+    if (currentZoom <= 1.0) {
+      return { x: 0, y: 0 };
+    }
+    const stage = document.getElementById('marksheetPreviewStage') || (canvas ? canvas.parentElement : null);
+    if (!stage) return { x: targetPanX, y: targetPanY };
+
+    const padding = getStagePadding(stage);
+    const stageW = stage.clientWidth;
+    const stageH = stage.clientHeight;
+    const baseW = canvas.offsetWidth || (canvas.width ? canvas.width / (window.devicePixelRatio || 1) : 0);
+    const baseH = canvas.offsetHeight || (canvas.height ? canvas.height / (window.devicePixelRatio || 1) : 0);
+
+    if (!stageW || !stageH || !baseW || !baseH) {
+      return { x: 0, y: 0 };
+    }
+
+    const scaledW = baseW * currentZoom;
+    const scaledH = baseH * currentZoom;
+
+    // Moving marksheet such that only padding (16px) space is exposed on all sides:
+    // When scaled dimension exceeds the padded stage area (stageDim - 2 * padding),
+    // maxPan brings the edge exactly to padding distance from the container wall.
+    // When it fits inside, pan is locked to 0 to keep it centered.
+    const maxPanX = Math.max(0, (scaledW - stageW) / 2 + padding);
+    const maxPanY = Math.max(0, (scaledH - stageH) / 2 + padding);
+
+    const clampedX = Math.max(-maxPanX, Math.min(maxPanX, targetPanX));
+    const clampedY = Math.max(-maxPanY, Math.min(maxPanY, targetPanY));
+
+    return { x: clampedX, y: clampedY };
+  }
+
+  function applyZoomTransform(isInstant = false) {
     if (!canvas) return;
+    const stage = document.getElementById('marksheetPreviewStage') || (canvas ? canvas.parentElement : null);
+
+    if (isInstant) {
+      canvas.style.transition = 'none';
+    } else {
+      canvas.style.transition = 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
+    }
+
     if (zoomLevel <= 1.0) {
       panX = 0;
       panY = 0;
       canvas.style.transform = `scale(${zoomLevel})`;
       canvas.classList.remove('is-zoomed', 'is-dragging');
+      if (stage) stage.classList.remove('is-zoomed', 'is-dragging');
     } else {
+      const clamped = clampPan(panX, panY);
+      panX = clamped.x;
+      panY = clamped.y;
       canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
       canvas.classList.add('is-zoomed');
+      if (stage) stage.classList.add('is-zoomed');
     }
+
     const label = document.getElementById('marksheetZoomLevel');
     if (label) label.textContent = `${Math.round(zoomLevel * 100)}%`;
     const btnIn = document.getElementById('btnMarksheetZoomIn');
@@ -685,15 +745,65 @@
   }
 
   function setZoom(newZoom) {
+    const oldZoom = zoomLevel;
     zoomLevel = Math.max(0.6, Math.min(2.5, +Number(newZoom).toFixed(2)));
-    applyZoomTransform();
+    if (zoomLevel <= 1.0) {
+      panX = 0;
+      panY = 0;
+    } else {
+      if (oldZoom > 0 && oldZoom !== zoomLevel) {
+        const ratio = zoomLevel / oldZoom;
+        panX = panX * ratio;
+        panY = panY * ratio;
+      }
+      const clamped = clampPan(panX, panY);
+      panX = clamped.x;
+      panY = clamped.y;
+    }
+    applyZoomTransform(false);
   }
 
   function resetZoom() {
     zoomLevel = 1.0;
     panX = 0;
     panY = 0;
-    applyZoomTransform();
+    applyZoomTransform(false);
+  }
+
+  function handleDragStart(clientX, clientY) {
+    if (zoomLevel <= 1.0) return false;
+    isDragging = true;
+    lastClientX = clientX;
+    lastClientY = clientY;
+    if (canvas) canvas.classList.add('is-dragging');
+    const stage = document.getElementById('marksheetPreviewStage') || (canvas ? canvas.parentElement : null);
+    if (stage) stage.classList.add('is-dragging');
+    return true;
+  }
+
+  function handleDragMove(clientX, clientY) {
+    if (!isDragging) return;
+    const deltaX = clientX - lastClientX;
+    const deltaY = clientY - lastClientY;
+    lastClientX = clientX;
+    lastClientY = clientY;
+
+    const clamped = clampPan(panX + deltaX, panY + deltaY);
+    panX = clamped.x;
+    panY = clamped.y;
+    applyZoomTransform(true);
+  }
+
+  function handleDragEnd() {
+    if (isDragging) {
+      isDragging = false;
+      const stage = document.getElementById('marksheetPreviewStage') || (canvas ? canvas.parentElement : null);
+      if (canvas) {
+        canvas.classList.remove('is-dragging');
+        applyZoomTransform(false);
+      }
+      if (stage) stage.classList.remove('is-dragging');
+    }
   }
 
   function setupZoomControls() {
@@ -724,34 +834,53 @@
       });
     }
 
-    if (canvas && !canvas.dataset.zoomBound) {
-      canvas.dataset.zoomBound = 'true';
-      canvas.addEventListener('mousedown', (e) => {
+    if (stage && !stage.dataset.dragBound) {
+      stage.dataset.dragBound = 'true';
+
+      stage.addEventListener('mousedown', (e) => {
         if (e.button !== 0 || zoomLevel <= 1.0) return;
-        isDragging = true;
-        startX = e.clientX - panX;
-        startY = e.clientY - panY;
-        canvas.classList.add('is-dragging');
+        if (e.target.closest('.marksheet-zoom-controls') || e.target.closest('button') || e.target.closest('a')) return;
+        handleDragStart(e.clientX, e.clientY);
         e.preventDefault();
       });
 
-      window.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        panX = e.clientX - startX;
-        panY = e.clientY - startY;
-        applyZoomTransform();
-      });
+      stage.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1 || zoomLevel <= 1.0) return;
+        if (e.target.closest('.marksheet-zoom-controls') || e.target.closest('button') || e.target.closest('a')) return;
+        handleDragStart(e.touches[0].clientX, e.touches[0].clientY);
+      }, { passive: true });
 
-      window.addEventListener('mouseup', () => {
+      stage.addEventListener('touchmove', (e) => {
+        if (!isDragging || e.touches.length !== 1) return;
+        handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+        e.preventDefault();
+      }, { passive: false });
+
+      stage.addEventListener('dblclick', (e) => {
+        if (e.target.closest('.marksheet-zoom-controls') || e.target.closest('button')) return;
+        if (zoomLevel > 1.0) resetZoom();
+        else setZoom(1.8);
+      });
+    }
+
+    if (!window._marksheetGlobalDragBound) {
+      window._marksheetGlobalDragBound = true;
+      window.addEventListener('mousemove', (e) => {
         if (isDragging) {
-          isDragging = false;
-          if (canvas) canvas.classList.remove('is-dragging');
+          handleDragMove(e.clientX, e.clientY);
         }
       });
 
-      canvas.addEventListener('dblclick', () => {
-        if (zoomLevel > 1.0) resetZoom();
-        else setZoom(1.5);
+      window.addEventListener('mouseup', () => {
+        handleDragEnd();
+      });
+
+      window.addEventListener('touchend', () => {
+        handleDragEnd();
+      });
+
+      window.addEventListener('touchcancel', () => {
+        handleDragEnd();
       });
     }
 
@@ -760,13 +889,19 @@
       stage.addEventListener('wheel', (e) => {
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
-          const delta = e.deltaY < 0 ? 0.15 : -0.15;
+          const delta = e.deltaY < 0 ? 0.2 : -0.2;
           setZoom(zoomLevel + delta);
+        } else if (zoomLevel > 1.0) {
+          e.preventDefault();
+          const clamped = clampPan(panX - e.deltaX, panY - e.deltaY);
+          panX = clamped.x;
+          panY = clamped.y;
+          applyZoomTransform(true);
         }
       }, { passive: false });
     }
 
-    applyZoomTransform();
+    applyZoomTransform(false);
   }
 
   function clear() {
@@ -852,6 +987,12 @@
     const ro = new ResizeObserver(() => {
       if (activeBuffer && !canvas.hidden) {
         updateVisibleCanvas();
+        if (zoomLevel > 1.0) {
+          const clamped = clampPan(panX, panY);
+          panX = clamped.x;
+          panY = clamped.y;
+          applyZoomTransform(false);
+        }
       }
     });
     ro.observe(canvas.parentElement);
@@ -859,6 +1000,12 @@
     window.addEventListener('resize', () => {
       if (activeBuffer && !canvas.hidden) {
         updateVisibleCanvas();
+        if (zoomLevel > 1.0) {
+          const clamped = clampPan(panX, panY);
+          panX = clamped.x;
+          panY = clamped.y;
+          applyZoomTransform(false);
+        }
       }
     });
   }
