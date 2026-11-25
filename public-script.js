@@ -1585,12 +1585,6 @@ class PublicAcademyApp {
     if (updateHash) {
       window.location.hash = viewName;
     }
-
-    if (window.lazyScroll) {
-      window.lazyScroll.scrollTo(0, true);
-    } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
   }
 
   renderBranding() {
