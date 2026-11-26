@@ -211,6 +211,29 @@ class PublicAcademyApp {
     return `${baseKey}_${this.currentOwnerEmail || this.currentAcademySlug}`;
   }
 
+  isAuthCodeRequired() {
+    return this.academyProfile?.authCodeRequired !== false;
+  }
+
+  updateAuthCodeRequirement() {
+    const required = this.isAuthCodeRequired();
+    if (this.regAuthHeading) {
+      this.regAuthHeading.style.display = required ? '' : 'none';
+    }
+    if (this.regAuthGroup) {
+      this.regAuthGroup.style.display = required ? '' : 'none';
+    }
+    if (this.regAuthCode) {
+      if (required) {
+        this.regAuthCode.setAttribute('required', '');
+      } else {
+        this.regAuthCode.removeAttribute('required');
+        this.regAuthCode.value = '';
+        this.regAuthCode.classList.remove('input-error');
+      }
+    }
+  }
+
   getDefaultProfile() {
     if (this.currentAcademySlug === 'poulami' || this.currentOwnerEmail.includes('poulami')) {
       return {
@@ -375,6 +398,8 @@ class PublicAcademyApp {
     this.regPhotoUpload = document.getElementById('regPhotoUpload');
     this.btnClearStudentPhoto = document.getElementById('btnClearStudentPhoto');
     this.regPhotoError = document.getElementById('regPhotoError');
+    this.regAuthHeading = document.getElementById('regAuthHeading');
+    this.regAuthGroup = document.getElementById('regAuthGroup');
     this.regAuthCode = document.getElementById('regAuthCode');
     this.authOtpBoxes = document.getElementById('authOtpBoxes');
     this.authOtpDigits = document.querySelectorAll('.auth-otp-digit');
@@ -798,6 +823,7 @@ class PublicAcademyApp {
         try {
           this.academyProfile = JSON.parse(event.newValue);
           this.renderBranding();
+          this.updateAuthCodeRequirement();
         } catch (e) {}
       }
       if (event.key !== this.getStorageKey(STORAGE_KEYS.COURSES) || event.newValue === null) return;
@@ -1926,6 +1952,9 @@ class PublicAcademyApp {
 
     // 3. Populate Course Dropdown in Student Registration Form
     this.populateCourseDropdown();
+
+    // 4. Update Authentication Code Requirement
+    this.updateAuthCodeRequirement();
   }
 
   renderCoursesCards(coursesList) {
@@ -2264,9 +2293,11 @@ class PublicAcademyApp {
       { value: district, label: 'District', element: this.regDistrictTrigger },
       { value: pinCode, label: 'Pin Code', element: this.regPinCode },
       { value: address, label: 'Full Address', element: this.regAddress },
-      { value: courseId, label: 'Course', element: this.regCourseTrigger },
-      { value: authCode, label: 'Authentication Code', element: this.regAuthCode }
+      { value: courseId, label: 'Course', element: this.regCourseTrigger }
     ];
+    if (this.isAuthCodeRequired()) {
+      requiredFields.push({ value: authCode, label: 'Authentication Code', element: this.regAuthCode });
+    }
     requiredFields.forEach(field => field.element?.classList.remove('input-error'));
     const missingFields = requiredFields.filter(field => !field.value);
     if (missingFields.length > 0) {
@@ -2340,7 +2371,7 @@ class PublicAcademyApp {
       return;
     }
 
-    if (!/^\d{6}$/.test(authCode)) {
+    if (this.isAuthCodeRequired() && !/^\d{6}$/.test(authCode)) {
       this.regAuthCode?.classList.add('input-error');
       this.regAuthCode?.focus();
       this.showToast('Authentication code must be exactly 6 digits.', 'error');
@@ -2915,6 +2946,10 @@ class PublicAcademyApp {
   }
 
   validateAuthenticationCode(inputCode) {
+    if (!this.isAuthCodeRequired()) {
+      return { valid: true };
+    }
+
     if (!inputCode) {
       return {
         valid: false,
