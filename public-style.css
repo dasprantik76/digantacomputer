@@ -1512,13 +1512,6 @@ textarea {
   color: #477496;
 }
 
-#view-student #studentRegForm .input-icon-wrap input:not(:disabled):hover,
-#view-student #studentRegForm .form-group textarea:not(:disabled):hover,
-#view-student #studentRegForm .custom-select-trigger:not(:disabled):hover {
-  border-color: #477496;
-  box-shadow: 0 3px 10px rgba(46, 85, 121, 0.13);
-}
-
 #view-student #studentRegForm .input-icon-wrap input:focus,
 #view-student #studentRegForm .form-group textarea:focus,
 #view-student #studentRegForm .custom-select-trigger:focus,
@@ -1614,13 +1607,6 @@ textarea {
 #view-student-verification #studentVerifySearchForm .input-icon-wrap>i,
 #view-marksheet #marksheetSearchForm .input-icon-wrap>i {
   color: #477496;
-}
-
-#view-certificate #certificateSearchForm .input-icon-wrap input:hover,
-#view-student-verification #studentVerifySearchForm .input-icon-wrap input:hover,
-#view-marksheet #marksheetSearchForm .input-icon-wrap input:hover {
-  border-color: #477496;
-  box-shadow: 0 3px 10px rgba(46, 85, 121, 0.13);
 }
 
 #view-certificate #certificateSearchForm .input-icon-wrap input:focus,
@@ -1900,7 +1886,6 @@ textarea {
   display: none;
 }
 
-#studentRegForm .student-photo-upload input[type="file"]:hover,
 #studentRegForm .student-photo-upload input[type="file"]:focus {
   border-color: #477496;
   box-shadow: 0 0 0 4px rgba(46, 85, 121, 0.1);
@@ -1988,15 +1973,6 @@ textarea {
   to {
     transform: rotate(360deg);
   }
-}
-
-
-#studentRegForm .input-icon-wrap input:not(:disabled):hover,
-#studentRegForm .form-group textarea:not(:disabled):hover,
-#studentRegForm .custom-select-trigger:not(:disabled):hover {
-  background-color: #ffffff;
-  border-color: #64748b;
-  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07);
 }
 
 .form-col-full {
@@ -4035,12 +4011,6 @@ input[data-capitalize="true"] {
   padding-top: 0.7rem;
   padding-bottom: 0.7rem;
   resize: none;
-}
-
-.contact-message-card input:hover,
-.contact-message-card textarea:hover {
-  border-color: #64748b;
-  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07);
 }
 
 .contact-message-card input:focus,
