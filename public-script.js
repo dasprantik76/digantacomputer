@@ -3508,7 +3508,7 @@ class PublicAcademyApp {
   closeModal(modalElement) {
     if (!modalElement) return;
     modalElement.classList.remove('open');
-    const hasOpenModals = Boolean(document.querySelector('.modal-backdrop.open, [role="dialog"]:not([hidden]):not(.modal-backdrop)'));
+    const hasOpenModals = Boolean(document.querySelector('.modal-backdrop.open, .gallery-lightbox:not([hidden])'));
     if (!hasOpenModals) {
       document.documentElement.classList.remove('modal-open');
       document.body.classList.remove('modal-open');
@@ -3713,7 +3713,7 @@ function setupGalleryLightbox() {
     lightbox.hidden = true;
     previewImage.src = '';
     previewImage.alt = '';
-    const hasOpenModals = Boolean(document.querySelector('.modal-backdrop.open, [role="dialog"]:not([hidden]):not(.modal-backdrop)'));
+    const hasOpenModals = Boolean(document.querySelector('.modal-backdrop.open, .gallery-lightbox:not([hidden])'));
     if (!hasOpenModals) {
       document.documentElement.classList.remove('modal-open');
       document.body.classList.remove('modal-open');

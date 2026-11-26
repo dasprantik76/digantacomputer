@@ -2429,8 +2429,6 @@ input[data-capitalize="true"] {
    ========================================================================== */
 html:has(.modal-backdrop.open),
 body:has(.modal-backdrop.open),
-html:has([role="dialog"]:not([hidden])),
-body:has([role="dialog"]:not([hidden])),
 html:has(.gallery-lightbox:not([hidden])),
 body:has(.gallery-lightbox:not([hidden])),
 html.modal-open,
