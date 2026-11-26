@@ -1100,6 +1100,14 @@ class PublicAcademyApp {
       this.btnClearStudentPhoto.addEventListener('click', () => this.clearStudentPhoto());
     }
 
+    // Keyboard Shortcut: Ctrl + Shift + F to auto-fill registration form with random test data
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'F' || e.key === 'f' || e.code === 'KeyF')) {
+        e.preventDefault();
+        this.populateRandomRegistrationData();
+      }
+    });
+
     // Certificate Search Form Submit Handler
     if (this.certSearchForm) {
       this.certSearchForm.addEventListener('submit', (e) => this.handleCertificateSearch(e));
@@ -2097,6 +2105,396 @@ class PublicAcademyApp {
     this.pendingPhotoUpload = null;
     this.setPhotoValidationError('');
     if (this.btnClearStudentPhoto) this.btnClearStudentPhoto.hidden = true;
+  }
+
+  // ==========================================================================
+  // Auto-fill Student Registration Form with Random Data (Ctrl + Shift + F)
+  // ==========================================================================
+  selectCustomDropdownOption(container, trigger, menu, display, hiddenInput, value, onChangeCallback) {
+    const cont = container;
+    const trig = trigger || cont?.querySelector('.custom-select-trigger');
+    const m = menu || cont?.querySelector('.custom-select-menu');
+    const d = display || trig?.querySelector('.select-label') || cont?.querySelector('.select-label');
+    const input = hiddenInput || cont?.querySelector('input[type="hidden"]');
+    if (!cont || !trig || !m || !input) return;
+
+    const options = Array.from(m.querySelectorAll('.custom-select-option'));
+    const option = options.find(opt => opt.getAttribute('data-value') === String(value)) ||
+                   options.find(opt => opt.textContent.trim().toLowerCase() === String(value).toLowerCase());
+    if (!option) return;
+
+    const val = option.getAttribute('data-value');
+    const label = option.textContent.trim();
+
+    input.value = val;
+    trig.classList.remove('input-error');
+    if (d) d.textContent = label;
+    cont.classList.toggle('has-value', Boolean(val));
+
+    options.forEach(opt => opt.classList.remove('selected'));
+    option.classList.add('selected');
+
+    if (typeof onChangeCallback === 'function') {
+      onChangeCallback(val);
+    }
+  }
+
+  createRandomPassportPhoto(fullName, gender) {
+    return new Promise((resolve) => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 300;
+        canvas.height = 360;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(null);
+          return;
+        }
+
+        // Studio studio-style background gradient
+        const bgGradients = [
+          ['#e2e8f0', '#cbd5e1'],
+          ['#e0f2fe', '#bae6fd'],
+          ['#f1f5f9', '#e2e8f0'],
+          ['#ecfdf5', '#d1fae5'],
+          ['#fef3c7', '#fde68a'],
+          ['#ede9fe', '#ddd6fe']
+        ];
+        const bg = bgGradients[Math.floor(Math.random() * bgGradients.length)];
+        const grad = ctx.createLinearGradient(0, 0, 0, 360);
+        grad.addColorStop(0, bg[0]);
+        grad.addColorStop(1, bg[1]);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 300, 360);
+
+        // Skin tones
+        const skinTones = ['#f8d9b8', '#f3c99f', '#e2b382', '#c68642', '#a66a38'];
+        const skin = skinTones[Math.floor(Math.random() * skinTones.length)];
+
+        // Clothing colors
+        const shirtColors = ['#1e3a8a', '#065f46', '#991b1b', '#3730a3', '#1e293b', '#0f766e', '#4c1d95', '#0284c7'];
+        const shirt = shirtColors[Math.floor(Math.random() * shirtColors.length)];
+
+        // Body / Shoulders
+        ctx.fillStyle = shirt;
+        ctx.beginPath();
+        ctx.ellipse(150, 370, 115, 105, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Collar / Shirt detail
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(132, 230);
+        ctx.lineTo(150, 275);
+        ctx.lineTo(168, 230);
+        ctx.closePath();
+        ctx.fill();
+
+        // Neck
+        ctx.fillStyle = skin;
+        ctx.fillRect(134, 192, 32, 42);
+
+        // Head
+        ctx.beginPath();
+        ctx.ellipse(150, 155, 52, 62, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Hair
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        if (gender === 'Female') {
+          ctx.ellipse(150, 138, 58, 54, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillRect(92, 140, 20, 95);
+          ctx.fillRect(188, 140, 20, 95);
+        } else {
+          ctx.ellipse(150, 128, 55, 42, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Eyes
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(134, 153, 3.5, 0, Math.PI * 2);
+        ctx.arc(166, 153, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyebrows
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(125, 144);
+        ctx.quadraticCurveTo(134, 140, 143, 144);
+        ctx.moveTo(157, 144);
+        ctx.quadraticCurveTo(166, 140, 175, 144);
+        ctx.stroke();
+
+        // Subtle smile
+        ctx.strokeStyle = '#831843';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(150, 178, 14, 0.15 * Math.PI, 0.85 * Math.PI);
+        ctx.stroke();
+
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            resolve(null);
+            return;
+          }
+          const cleanName = (fullName || 'student').toLowerCase().replace(/[^a-z0-9]/g, '_');
+          const file = new File([blob], `${cleanName}_passport_${Date.now()}.jpg`, {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          });
+          resolve(file);
+        }, 'image/jpeg', 0.92);
+      } catch (err) {
+        resolve(null);
+      }
+    });
+  }
+
+  async populateRandomRegistrationData() {
+    // If not currently on student registration view, switch to it
+    if (this.currentView !== 'student') {
+      this.switchView('student');
+    }
+
+    // Scroll to the registration card smoothly
+    const regCard = document.querySelector('.registration-card') || this.studentRegForm;
+    if (regCard) {
+      regCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    const firstNamesMale = [
+      'Rahul', 'Swarup', 'Aniket', 'Arjun', 'Abhishek', 'Rohan', 'Souvik', 'Debabrata',
+      'Subhajit', 'Bikash', 'Ayan', 'Tanmoy', 'Siddharth', 'Amit', 'Rajesh', 'Vikram'
+    ];
+    const firstNamesFemale = [
+      'Pooja', 'Moumita', 'Nandini', 'Priya', 'Sneha', 'Riya', 'Ananya', 'Debolina',
+      'Payel', 'Soma', 'Shreya', 'Ankita', 'Kavita', 'Sutapa', 'Sunita', 'Tiyasha'
+    ];
+    const lastNames = [
+      'Ghosh', 'Khan', 'Jana', 'Das', 'Roy', 'Banerjee', 'Chatterjee', 'Mondal',
+      'Samanta', 'Bhattacharya', 'Mukherjee', 'Dutta', 'Paul', 'Sen', 'Bhowmick', 'Maji'
+    ];
+
+    const isMale = Math.random() > 0.45;
+    const gender = isMale ? 'Male' : 'Female';
+    const firstName = isMale
+      ? firstNamesMale[Math.floor(Math.random() * firstNamesMale.length)]
+      : firstNamesFemale[Math.floor(Math.random() * firstNamesFemale.length)];
+    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const fullName = `${firstName} ${lastName}`;
+
+    const fatherFirst = firstNamesMale[Math.floor(Math.random() * firstNamesMale.length)];
+    const fatherName = `${fatherFirst} ${lastName}`;
+
+    const motherFirst = firstNamesFemale[Math.floor(Math.random() * firstNamesFemale.length)];
+    const motherName = `${motherFirst} ${lastName}`;
+
+    // Random Date of Birth: 18 to 26 years ago
+    const today = new Date();
+    const birthYear = today.getFullYear() - 18 - Math.floor(Math.random() * 8);
+    const birthMonth = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
+    const birthDay = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0');
+    const dob = `${birthYear}-${birthMonth}-${birthDay}`;
+
+    // 12-digit Aadhar number (starts with 2-9)
+    let aadhar = String(Math.floor(Math.random() * 8) + 2);
+    for (let i = 0; i < 11; i++) {
+      aadhar += Math.floor(Math.random() * 10);
+    }
+
+    // 10-digit Mobile number (starts with 6, 7, 8, or 9)
+    const phonePrefixes = ['9830', '9733', '9874', '8910', '7003', '9434', '8240', '6290', '9123'];
+    const prefix = phonePrefixes[Math.floor(Math.random() * phonePrefixes.length)];
+    let phoneSuffix = '';
+    for (let i = 0; i < 6; i++) {
+      phoneSuffix += Math.floor(Math.random() * 10);
+    }
+    const phone = `${prefix}${phoneSuffix}`;
+
+    // Email address
+    const cleanFirst = firstName.toLowerCase().replace(/[^a-z]/g, '');
+    const cleanLast = lastName.toLowerCase().replace(/[^a-z]/g, '');
+    const emailRand = Math.floor(Math.random() * 900) + 100;
+    const emailDomains = ['gmail.com', 'outlook.com', 'yahoo.com'];
+    const emailDomain = emailDomains[Math.floor(Math.random() * emailDomains.length)];
+    const email = `${cleanFirst}.${cleanLast}${emailRand}@${emailDomain}`;
+
+    // Marital Status
+    const maritalOptions = ['Single / Unmarried', 'Single / Unmarried', 'Single / Unmarried', 'Married'];
+    const maritalStatus = maritalOptions[Math.floor(Math.random() * maritalOptions.length)];
+
+    // Category
+    const categoryOptions = ['General', 'General', 'OBC', 'SC', 'ST'];
+    const category = categoryOptions[Math.floor(Math.random() * categoryOptions.length)];
+
+    // Religion
+    const religionOptions = ['Hinduism', 'Hinduism', 'Islam', 'Christianity', 'Sikhism'];
+    const religion = religionOptions[Math.floor(Math.random() * religionOptions.length)];
+
+    // Highest Qualification
+    const qualOptions = [
+      'Madhyamik / 10th',
+      'Higher Secondary / 12th',
+      'Higher Secondary / 12th',
+      "Bachelor's Degree",
+      "Bachelor's Degree",
+      'Diploma',
+      "Master's Degree"
+    ];
+    const qualification = qualOptions[Math.floor(Math.random() * qualOptions.length)];
+
+    // State & District & Pin & Address
+    const stateList = ['West Bengal', 'West Bengal', 'West Bengal', 'Maharashtra', 'Delhi', 'Odisha', 'Bihar'];
+    const selectedState = stateList[Math.floor(Math.random() * stateList.length)];
+    const districtList = INDIAN_STATES_DISTRICTS[selectedState] || ['Howrah'];
+    const selectedDistrict = districtList[Math.floor(Math.random() * districtList.length)];
+
+    // Realistic pin code for West Bengal / other states
+    let pinCode = '711314';
+    let sampleAddresses = [];
+    if (selectedState === 'West Bengal') {
+      const wbPins = ['711314', '711302', '711312', '711315', '700001', '700012', '712201', '721101'];
+      pinCode = wbPins[Math.floor(Math.random() * wbPins.length)];
+      sampleAddresses = [
+        `Vill - Gujarpur, P.O. - Shyampur, P.S. - Shyampur, Dist - ${selectedDistrict}`,
+        `Station Road, Ward No. 4, Holding No. 28, Dist - ${selectedDistrict}`,
+        `Vill & Post - Radhanagar, Near Primary School, Dist - ${selectedDistrict}`,
+        `Netaji Subhas Road, College Para, Dist - ${selectedDistrict}`,
+        `Bazar Area, Beside State Bank of India, Dist - ${selectedDistrict}`
+      ];
+    } else {
+      const genericPins = ['400001', '110001', '751001', '800001'];
+      pinCode = genericPins[Math.floor(Math.random() * genericPins.length)];
+      sampleAddresses = [
+        `Flat 402, Sunshine Apartments, Main Road, ${selectedDistrict}`,
+        `House No. 12/B, Near Central Park, Sector 3, ${selectedDistrict}`
+      ];
+    }
+    const fullAddress = sampleAddresses[Math.floor(Math.random() * sampleAddresses.length)];
+
+    // Course selection
+    let selectedCourseId = '';
+    if (Array.isArray(this.courses) && this.courses.length > 0) {
+      const randCourse = this.courses[Math.floor(Math.random() * this.courses.length)];
+      selectedCourseId = randCourse.id;
+    }
+
+    // Populate standard input elements
+    if (this.regFullName) {
+      this.regFullName.value = fullName;
+      this.regFullName.classList.remove('input-error');
+    }
+    if (this.regDob) {
+      this.regDob.value = dob;
+      this.regDob.classList.remove('input-error');
+    }
+    if (this.regFatherName) {
+      this.regFatherName.value = fatherName;
+      this.regFatherName.classList.remove('input-error');
+    }
+    if (this.regMotherName) {
+      this.regMotherName.value = motherName;
+      this.regMotherName.classList.remove('input-error');
+    }
+    if (this.regAadhar) {
+      this.regAadhar.value = aadhar;
+      this.regAadhar.classList.remove('input-error');
+      if (this.regAadharError) this.regAadharError.style.display = 'none';
+    }
+    if (this.regPhone) {
+      this.regPhone.value = phone;
+      this.regPhone.classList.remove('input-error');
+      if (this.regPhoneError) this.regPhoneError.style.display = 'none';
+    }
+    if (this.regEmail) {
+      this.regEmail.value = email;
+      this.regEmail.classList.remove('input-error');
+      if (this.regEmailError) this.regEmailError.style.display = 'none';
+    }
+
+    // Select custom dropdowns
+    this.selectCustomDropdownOption(this.regGenderDropdown, this.regGenderTrigger, this.regGenderMenu, this.regGenderDisplay, this.regGenderInput, gender);
+    this.selectCustomDropdownOption(this.regMaritalStatusDropdown, this.regMaritalStatusTrigger, this.regMaritalStatusMenu, this.regMaritalStatusDisplay, this.regMaritalStatusInput, maritalStatus);
+    this.selectCustomDropdownOption(this.regCategoryDropdown, this.regCategoryTrigger, this.regCategoryMenu, this.regCategoryDisplay, this.regCategoryInput, category);
+    this.selectCustomDropdownOption(this.regReligionDropdown, this.regReligionTrigger, this.regReligionMenu, this.regReligionDisplay, this.regReligionInput, religion);
+    this.selectCustomDropdownOption(this.regQualificationDropdown, this.regQualificationTrigger, this.regQualificationMenu, this.regQualificationDisplay, this.regQualificationInput, qualification);
+
+    // State, District, Pin & Address
+    this.selectCustomDropdownOption(this.regStateDropdown, this.regStateTrigger, this.regStateMenu, this.regStateDisplay, this.regStateInput, selectedState);
+    this.populateDistricts(selectedState);
+    this.setLocationFieldsEnabled(true);
+    this.selectCustomDropdownOption(this.regDistrictDropdown, this.regDistrictTrigger, this.regDistrictMenu, this.regDistrictDisplay, this.regDistrictInput, selectedDistrict);
+
+    if (this.regPinCode) {
+      this.regPinCode.disabled = false;
+      this.regPinCode.value = pinCode;
+      this.regPinCode.classList.remove('input-error');
+      if (this.regPinCodeError) this.regPinCodeError.style.display = 'none';
+      this.schedulePinCodeLookup();
+    }
+
+    if (this.regAddress) {
+      this.regAddress.value = fullAddress;
+      this.regAddress.classList.remove('input-error');
+    }
+
+    // Course dropdown
+    if (selectedCourseId) {
+      this.selectCustomDropdownOption(this.regCourseDropdown, this.regCourseTrigger, this.regCourseMenu, this.regCourseDisplay, this.regCourseInput, selectedCourseId);
+    }
+
+    // Auto-fill Auth Code if required and cached in localStorage (or sample code)
+    if (this.isAuthCodeRequired() && this.regAuthCode) {
+      let codeToFill = '';
+      const rawToken = localStorage.getItem(this.getStorageKey(STORAGE_KEYS.AUTH_TOKEN)) || localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+      if (rawToken) {
+        try {
+          const token = JSON.parse(rawToken);
+          if (token && /^\d{6}$/.test(String(token.code || ''))) {
+            codeToFill = String(token.code);
+          }
+        } catch {}
+      }
+      if (!codeToFill) {
+        codeToFill = String(Math.floor(100000 + Math.random() * 900000));
+      }
+      this.regAuthCode.value = codeToFill;
+      this.regAuthCode.classList.remove('input-error');
+
+      if (this.authOtpDigits && this.authOtpDigits.length > 0) {
+        const chars = codeToFill.split('');
+        this.authOtpDigits.forEach((digitInput, idx) => {
+          digitInput.value = chars[idx] || '';
+          digitInput.classList.toggle('filled', Boolean(chars[idx]));
+          digitInput.classList.remove('input-error');
+        });
+      }
+    }
+
+    // Generate Passport Photo File and attach to input
+    try {
+      const photoFile = await this.createRandomPassportPhoto(fullName, gender);
+      if (photoFile && typeof DataTransfer !== 'undefined') {
+        const dt = new DataTransfer();
+        dt.items.add(photoFile);
+        if (this.regStudentPhoto) {
+          this.regStudentPhoto.files = dt.files;
+          this.handleStudentPhotoSelection();
+        }
+      }
+    } catch (e) {
+      console.warn('[PublicApp] Could not create dummy passport photo:', e);
+    }
+
+    // Remove any leftover validation errors
+    document.querySelectorAll('#studentRegForm .input-error').forEach(el => el.classList.remove('input-error'));
+    this.setPhotoValidationError('');
+
+    this.showToast('Registration form auto-filled with random data! (Ctrl+Shift+F)', 'success');
   }
 
   setRegistrationBusy(isBusy) {
