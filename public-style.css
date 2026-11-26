@@ -1847,7 +1847,7 @@ textarea {
   width: 100%;
   height: 54px;
   min-height: 54px;
-  padding: 5px 0.75rem 5px 5px;
+  padding: 5px 3.25rem 5px 5px;
   line-height: 1;
   color: #334155;
   background: #ffffff;
@@ -1860,30 +1860,39 @@ textarea {
 
 .student-photo-clear {
   position: absolute;
-  top: 50%;
-  right: 0.65rem;
-  width: 34px;
-  height: 34px;
+  top: 0;
+  bottom: 0;
+  right: 0.75rem;
+  margin: auto 0 !important;
+  width: 32px;
+  height: 32px;
   padding: 0;
   color: #64748b;
   background: #f1f5f9;
   border: 1px solid #cbd5e1;
-  border-radius: 50%;
+  border-radius: 50% !important;
   cursor: pointer;
-  transform: translateY(-50%);
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  transform: none !important;
   transition: color var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast);
+  z-index: 2;
 }
 
 .student-photo-clear:hover,
-.student-photo-clear:focus-visible {
+.student-photo-clear:focus-visible,
+.student-photo-clear:active {
   color: #ffffff;
-  background: var(--rose);
-  border-color: var(--rose);
+  background: var(--rose, #f43f5e) !important;
+  border-color: var(--rose, #f43f5e) !important;
+  transform: none !important;
   outline: none;
 }
 
 .student-photo-clear[hidden] {
-  display: none;
+  display: none !important;
 }
 
 #studentRegForm .student-photo-upload input[type="file"]:focus {
