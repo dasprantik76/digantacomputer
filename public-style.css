@@ -2425,8 +2425,20 @@ input[data-capitalize="true"] {
 }
 
 /* ==========================================================================
-   Success Confirmation Modal
+   Success Confirmation Modal & Dialog Scroll Prevention
    ========================================================================== */
+html:has(.modal-backdrop.open),
+body:has(.modal-backdrop.open),
+html:has([role="dialog"]:not([hidden])),
+body:has([role="dialog"]:not([hidden])),
+html:has(.gallery-lightbox:not([hidden])),
+body:has(.gallery-lightbox:not([hidden])),
+html.modal-open,
+body.modal-open {
+  overflow: hidden !important;
+  overscroll-behavior: contain !important;
+}
+
 .modal-backdrop {
   position: fixed;
   top: 0;
@@ -2435,6 +2447,7 @@ input[data-capitalize="true"] {
   bottom: 0;
   background-color: rgba(15, 23, 42, 0.7);
   backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 1000;
   display: none;
   align-items: center;
@@ -2442,6 +2455,9 @@ input[data-capitalize="true"] {
   padding: 1.5rem;
   opacity: 0;
   transition: opacity var(--transition-normal);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 
 .modal-backdrop.open {
@@ -3465,6 +3481,8 @@ input[data-capitalize="true"] {
   background: rgba(7, 16, 35, 0.94);
   backdrop-filter: blur(8px);
   cursor: zoom-out;
+  overscroll-behavior: contain;
+  touch-action: none;
 }
 
 .gallery-lightbox img {

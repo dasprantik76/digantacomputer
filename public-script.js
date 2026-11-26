@@ -1166,9 +1166,23 @@ class PublicAcademyApp {
     // Modal Close
     if (this.btnCloseSuccessModal && this.successModal) {
       this.btnCloseSuccessModal.addEventListener('click', () => {
-        this.successModal.classList.remove('open');
+        this.closeModal(this.successModal);
       });
     }
+
+    if (this.successModal) {
+      this.successModal.addEventListener('click', (e) => {
+        if (e.target === this.successModal) {
+          this.closeModal(this.successModal);
+        }
+      });
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.successModal?.classList.contains('open')) {
+        this.closeModal(this.successModal);
+      }
+    });
   }
 
   // ==========================================================================
@@ -2917,7 +2931,7 @@ class PublicAcademyApp {
     if (this.modalRegDate) this.modalRegDate.textContent = formatCertificateDate(joinDate);
 
     if (this.successModal) {
-      this.successModal.classList.add('open');
+      this.openModal(this.successModal);
     }
 
     // Reset Form
@@ -3464,6 +3478,43 @@ class PublicAcademyApp {
       }
     }, 4500);
   }
+
+  openModal(modalElement) {
+    if (!modalElement) return;
+    modalElement.classList.add('open');
+    document.documentElement.classList.add('modal-open');
+    document.body.classList.add('modal-open');
+    document.body.style.overflow = 'hidden';
+    if (!modalElement._scrollLockAttached) {
+      modalElement._scrollLockAttached = true;
+      modalElement.addEventListener('wheel', (e) => {
+        const dialog = modalElement.querySelector('.modal-window, [role="dialog"]');
+        if (!dialog || !dialog.contains(e.target)) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+      modalElement.addEventListener('touchmove', (e) => {
+        const dialog = modalElement.querySelector('.modal-window, [role="dialog"]');
+        if (!dialog || !dialog.contains(e.target)) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+    }
+    const dialog = modalElement.querySelector('.modal-window, [role="dialog"]') || modalElement;
+    dialog.setAttribute('tabindex', '-1');
+    dialog.focus({ preventScroll: true });
+  }
+
+  closeModal(modalElement) {
+    if (!modalElement) return;
+    modalElement.classList.remove('open');
+    const hasOpenModals = Boolean(document.querySelector('.modal-backdrop.open, [role="dialog"]:not([hidden]):not(.modal-backdrop)'));
+    if (!hasOpenModals) {
+      document.documentElement.classList.remove('modal-open');
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';
+    }
+  }
 }
 
 // ==========================================================================
@@ -3652,6 +3703,8 @@ function setupGalleryLightbox() {
     previewImage.src = image.currentSrc || image.src;
     previewImage.alt = image.alt;
     lightbox.hidden = false;
+    document.documentElement.classList.add('modal-open');
+    document.body.classList.add('modal-open');
     document.body.style.overflow = 'hidden';
     closeButton.focus();
   };
@@ -3660,10 +3713,22 @@ function setupGalleryLightbox() {
     lightbox.hidden = true;
     previewImage.src = '';
     previewImage.alt = '';
-    document.body.style.overflow = '';
+    const hasOpenModals = Boolean(document.querySelector('.modal-backdrop.open, [role="dialog"]:not([hidden]):not(.modal-backdrop)'));
+    if (!hasOpenModals) {
+      document.documentElement.classList.remove('modal-open');
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';
+    }
     activeItem?.focus();
     activeItem = null;
   };
+
+  lightbox.addEventListener('wheel', (e) => {
+    e.preventDefault();
+  }, { passive: false });
+  lightbox.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+  }, { passive: false });
 
   galleryItems.forEach((item) => {
     item.tabIndex = 0;
