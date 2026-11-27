@@ -108,12 +108,41 @@
       totalMax += maxMarks;
       totalObtained += obtained;
 
-      let title = subj;
+      let title = String(subj || '').trim();
       let modules = '';
-      if (subj.includes('—') || subj.includes('-')) {
-        const parts = subj.split(/[—-]/);
-        title = parts[0].trim();
-        modules = 'Modules: ' + parts.slice(1).join(' - ').trim();
+
+      // Check if this row is the final exam (4th item, or last item when >= 3 subjects, or matches /Final/i)
+      const isFinalExam = /^(?:Course\s+Final|Final\s+Exam|Final)/i.test(title) || (idx === courseSubjects.length - 1 && (idx >= 2 || /Final/i.test(subj)));
+
+      if (isFinalExam) {
+        // For the 4th data, it should directly be the final exam name of the course
+        let examName = title;
+        if (title.includes('—') || title.includes('-')) {
+          const parts = title.split(/[—-]/);
+          examName = parts.slice(1).join(' - ').trim() || parts[0].trim();
+        } else if (/^(?:Course\s+Final|Final\s+Exam)\s*[:]/i.test(title)) {
+          examName = title.replace(/^(?:Course\s+Final|Final\s+Exam)\s*[:]\s*/i, '').trim();
+        }
+        examName = examName.replace(/^(?:Course\s+Final|Final\s+Exam|Modules?)\s*[:—\-]?\s*/i, '').trim() || title;
+        title = examName;
+        modules = '';
+      } else {
+        // Terminal subjects (1st, 2nd, 3rd)
+        if (title.includes('—') || title.includes('-')) {
+          const parts = title.split(/[—-]/);
+          title = parts[0].replace(/\s+Modules?$/i, '').trim();
+          let rawModules = parts.slice(1).join(' - ').trim();
+          let cleanModules = rawModules.replace(/^(?:Modules?|Module)\s*[:—\-]?\s*/i, '').trim();
+          modules = cleanModules ? 'Modules: ' + cleanModules : '';
+        } else if (/^(\d+(?:st|nd|rd|th)\s+Terminal(?:\s+Modules)?)\s*[:](.*)$/i.test(title)) {
+          const match = title.match(/^(\d+(?:st|nd|rd|th)\s+Terminal(?:\s+Modules)?)\s*[:](.*)$/i);
+          title = match[1].replace(/\s+Modules?$/i, '').trim();
+          let cleanModules = match[2].trim().replace(/^(?:Modules?|Module)\s*[:—\-]?\s*/i, '').trim();
+          modules = cleanModules ? 'Modules: ' + cleanModules : '';
+        } else {
+          title = title.replace(/\s+Modules?$/i, '').trim();
+          modules = '';
+        }
       }
 
       return { slNo: idx + 1, title, modules, maxMarks, obtained };
