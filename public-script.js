@@ -482,6 +482,9 @@ class PublicAcademyApp {
     this.modalCourseName = document.getElementById('modalCourseName');
     this.modalRegDate = document.getElementById('modalRegDate');
     this.btnCloseSuccessModal = document.getElementById('btnCloseSuccessModal');
+    this.btnDownloadRegisteredAppPdf = document.getElementById('btnDownloadRegisteredAppPdf');
+    this.lastRegisteredStudent = null;
+    this.lastRegisteredCourse = null;
 
     // Toast Container
     this.toastContainer = document.getElementById('toastContainer');
@@ -1163,10 +1166,16 @@ class PublicAcademyApp {
       });
     }
 
-    // Modal Close
+    // Modal Close & Actions
     if (this.btnCloseSuccessModal && this.successModal) {
       this.btnCloseSuccessModal.addEventListener('click', () => {
         this.closeModal(this.successModal);
+      });
+    }
+
+    if (this.btnDownloadRegisteredAppPdf) {
+      this.btnDownloadRegisteredAppPdf.addEventListener('click', () => {
+        this.downloadRegisteredApplicationForm();
       });
     }
 
@@ -1504,10 +1513,146 @@ class PublicAcademyApp {
 
     if (!cont || !trig || !m || !input) return;
 
+    const commitOption = (option) => {
+      if (!option) return;
+
+      const value = option.getAttribute('data-value');
+      const label = option.textContent.trim();
+
+      input.value = value;
+      trig.classList.remove('input-error');
+      if (d) d.textContent = label;
+      cont.classList.toggle('has-value', Boolean(value));
+
+      m.querySelectorAll('.custom-select-option').forEach(opt => {
+        opt.classList.remove('selected', 'soft-selected');
+      });
+      option.classList.add('selected');
+
+      cont.classList.remove('open');
+      trig.setAttribute('aria-expanded', 'false');
+      trig.focus();
+
+      if (typeof onChangeCallback === 'function') {
+        onChangeCallback(value);
+      }
+    };
+
+    const softSelectOption = (option) => {
+      if (!option) return;
+      m.querySelectorAll('.custom-select-option').forEach(opt => opt.classList.remove('soft-selected'));
+      option.classList.add('soft-selected');
+      option.scrollIntoView({ block: 'nearest' });
+    };
+
+    let typeaheadBuffer = '';
+    let typeaheadTimeout = null;
+
+    const handleKeydown = (e) => {
+      if (!cont.classList.contains('open')) return;
+
+      const options = Array.from(m.querySelectorAll('.custom-select-option')).filter(opt => {
+        return opt.offsetParent !== null && !opt.disabled && opt.getAttribute('data-value') !== '';
+      });
+      if (!options.length) return;
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        cont.classList.remove('open');
+        trig.setAttribute('aria-expanded', 'false');
+        m.querySelectorAll('.custom-select-option').forEach(opt => opt.classList.remove('soft-selected'));
+        trig.focus();
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        const softSelected = m.querySelector('.custom-select-option.soft-selected') ||
+                             m.querySelector('.custom-select-option.selected');
+        if (softSelected) {
+          e.preventDefault();
+          e.stopPropagation();
+          commitOption(softSelected);
+        }
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const softSelected = m.querySelector('.custom-select-option.soft-selected');
+        if (softSelected) {
+          commitOption(softSelected);
+        } else {
+          cont.classList.remove('open');
+          trig.setAttribute('aria-expanded', 'false');
+        }
+        return;
+      }
+
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        e.stopPropagation();
+        const currentIdx = options.findIndex(opt => opt.classList.contains('soft-selected') || opt.classList.contains('selected'));
+        let nextIdx;
+        if (e.key === 'ArrowDown') {
+          nextIdx = currentIdx >= 0 && currentIdx < options.length - 1 ? currentIdx + 1 : 0;
+        } else {
+          nextIdx = currentIdx > 0 ? currentIdx - 1 : options.length - 1;
+        }
+        softSelectOption(options[nextIdx]);
+        return;
+      }
+
+      // Single printable character (alphabet search)
+      if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        if (e.key === ' ') e.preventDefault();
+        e.stopPropagation();
+
+        const char = e.key.toLowerCase();
+        clearTimeout(typeaheadTimeout);
+        typeaheadTimeout = setTimeout(() => {
+          typeaheadBuffer = '';
+        }, 800);
+
+        const isRepeatedChar = typeaheadBuffer.length > 0 && typeaheadBuffer.split('').every(c => c === char);
+
+        if (isRepeatedChar) {
+          const matching = options.filter(opt => opt.textContent.trim().toLowerCase().startsWith(char));
+          if (matching.length > 0) {
+            const currentSoft = m.querySelector('.custom-select-option.soft-selected');
+            const currentIndexInMatching = matching.indexOf(currentSoft);
+            const nextInMatching = (currentIndexInMatching + 1) % matching.length;
+            softSelectOption(matching[nextInMatching]);
+            typeaheadBuffer += char;
+            return;
+          }
+        }
+
+        typeaheadBuffer += char;
+
+        let matched = options.find(opt => opt.textContent.trim().toLowerCase().startsWith(typeaheadBuffer));
+        if (!matched && typeaheadBuffer.length > 1) {
+          typeaheadBuffer = char;
+          matched = options.find(opt => opt.textContent.trim().toLowerCase().startsWith(typeaheadBuffer));
+        }
+
+        if (matched) {
+          softSelectOption(matched);
+        }
+      }
+    };
+
+    cont._customDropdownKeyHandler = handleKeydown;
+    cont.addEventListener('keydown', handleKeydown);
+
+    m.addEventListener('mousedown', (e) => {
+      if (e.target === m) e.preventDefault();
+    });
+
     trig.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
       if (trig.disabled) return;
+
       // Close other dropdowns first
       const allDropdowns = [
         this.regGenderDropdown, this.regMaritalStatusDropdown, this.regCategoryDropdown,
@@ -1519,35 +1664,34 @@ class PublicAcademyApp {
           otherDropdown.classList.remove('open');
           const t = otherDropdown.querySelector('.custom-select-trigger');
           if (t) t.setAttribute('aria-expanded', 'false');
+          otherDropdown.querySelectorAll('.custom-select-option').forEach(opt => opt.classList.remove('soft-selected'));
         }
       });
 
-      const isOpen = cont.classList.toggle('open');
-      trig.setAttribute('aria-expanded', String(isOpen));
+      const willOpen = !cont.classList.contains('open');
+      if (willOpen) {
+        cont.classList.remove('open-above', 'drop-up');
+        cont.classList.add('open');
+        trig.setAttribute('aria-expanded', 'true');
+        trig.focus();
+
+        const currentSel = m.querySelector('.custom-select-option.selected');
+        if (currentSel) {
+          m.querySelectorAll('.custom-select-option').forEach(opt => opt.classList.remove('soft-selected'));
+          currentSel.classList.add('soft-selected');
+          currentSel.scrollIntoView({ block: 'nearest' });
+        }
+      } else {
+        cont.classList.remove('open');
+        trig.setAttribute('aria-expanded', 'false');
+        m.querySelectorAll('.custom-select-option').forEach(opt => opt.classList.remove('soft-selected'));
+      }
     });
 
     m.addEventListener('click', (e) => {
       const option = e.target.closest('.custom-select-option');
       if (!option) return;
-
-      const value = option.getAttribute('data-value');
-      const label = option.textContent.trim();
-
-      input.value = value;
-      trig.classList.remove('input-error');
-      if (d) d.textContent = label;
-      cont.classList.toggle('has-value', Boolean(value));
-
-      // Update selected state
-      m.querySelectorAll('.custom-select-option').forEach(opt => opt.classList.remove('selected'));
-      option.classList.add('selected');
-
-      cont.classList.remove('open');
-      trig.setAttribute('aria-expanded', 'false');
-
-      if (typeof onChangeCallback === 'function') {
-        onChangeCallback(value);
-      }
+      commitOption(option);
     });
   }
 
@@ -2907,7 +3051,9 @@ class PublicAcademyApp {
       this.setRegistrationBusy(false);
     }
 
-    const savedStudent = registrationResult.student || newStudent;
+    const savedStudent = Object.assign({}, newStudent, registrationResult?.student || {});
+    this.lastRegisteredStudent = savedStudent;
+    this.lastRegisteredCourse = selectedCourse || { id: courseId, title: courseTitle, duration: selectedCourse?.duration || '6 Months' };
 
     // Cache the server-confirmed registration locally for this tenant.
     let allStudents = [];
@@ -2985,6 +3131,36 @@ class PublicAcademyApp {
     if (this.regDob) this.regDob.classList.remove('has-value');
 
     this.showToast('Registration successfully submitted!', 'success');
+  }
+
+  async downloadRegisteredApplicationForm() {
+    if (!this.lastRegisteredStudent) {
+      this.showToast('No registration details found to download.', 'warning');
+      return;
+    }
+    if (!window.ApplicationFormCanvas?.downloadApplicationForm) {
+      this.showToast('Application form generator is still loading. Please try again.', 'error');
+      return;
+    }
+
+    const btn = this.btnDownloadRegisteredAppPdf;
+    const originalContent = btn ? btn.innerHTML : '';
+    try {
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating PDF...';
+      }
+      await window.ApplicationFormCanvas.downloadApplicationForm(this.lastRegisteredStudent, this.lastRegisteredCourse);
+      this.showToast('Application Form PDF downloaded successfully!', 'success');
+    } catch (err) {
+      console.error('Failed to download application form PDF:', err);
+      this.showToast('Failed to generate application form PDF. Please try again.', 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+      }
+    }
   }
 
   // ==========================================================================

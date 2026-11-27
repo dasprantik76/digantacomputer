@@ -1493,6 +1493,7 @@ textarea {
   border-color: #9db0c0;
   border-radius: 0;
   padding: 3.5rem 4rem;
+  overflow: visible;
 }
 
 #view-student .registration-card::before {
@@ -1526,6 +1527,14 @@ textarea {
 #view-student #studentRegForm .custom-select-option.selected {
   color: #2e5579;
   background: #e2ebf2;
+}
+
+#view-student #studentRegForm .custom-select-option.soft-selected {
+  color: #173044;
+  background: #d8e5ef;
+  outline: 1.5px solid #2e5579;
+  outline-offset: -1.5px;
+  font-weight: 600;
 }
 
 #view-student #studentRegForm .btn-submit-reg {
@@ -1687,7 +1696,7 @@ textarea {
   box-shadow: var(--shadow-xl);
   padding: 2.5rem;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .registration-card::before {
@@ -1697,6 +1706,7 @@ textarea {
   left: 0;
   right: 0;
   height: 5px;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
 }
 
@@ -2136,6 +2146,15 @@ input[data-capitalize="true"] {
   width: 100%;
 }
 
+.custom-select-container.open {
+  z-index: 400;
+}
+
+.form-group:has(.custom-select-container.open) {
+  z-index: 400;
+  position: relative;
+}
+
 .custom-select-trigger {
   width: 100%;
   height: 48px;
@@ -2209,7 +2228,7 @@ input[data-capitalize="true"] {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
-  z-index: 300;
+  z-index: 400;
   list-style: none;
   padding: 0.35rem;
   margin: 0;
@@ -2255,6 +2274,14 @@ input[data-capitalize="true"] {
 .custom-select-option.selected {
   background-color: var(--primary-light);
   color: var(--primary);
+  font-weight: 600;
+}
+
+.custom-select-option.soft-selected {
+  background-color: var(--primary-light);
+  color: var(--primary);
+  outline: 1.5px solid var(--primary);
+  outline-offset: -1.5px;
   font-weight: 600;
 }
 
@@ -2581,30 +2608,67 @@ body.modal-open {
 
 .success-dialog-actions {
   display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.success-done-button {
+.btn-download-application-pdf {
   width: 100%;
   min-height: 48px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   color: #ffffff;
   background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
   border: 0;
   border-radius: 10px;
   box-shadow: 0 7px 16px rgba(79, 70, 229, 0.22);
   font: inherit;
+  font-size: 0.95rem;
   font-weight: 800;
   cursor: pointer;
   transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
 }
 
-.success-done-button:hover,
-.success-done-button:focus-visible {
+.btn-download-application-pdf:hover,
+.btn-download-application-pdf:focus-visible {
   background: linear-gradient(135deg, #3730a3 0%, #4f46e5 100%);
   box-shadow: 0 9px 19px rgba(79, 70, 229, 0.3);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.btn-download-application-pdf:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.success-done-button {
+  width: 100%;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  box-shadow: none;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.success-done-button:hover,
+.success-done-button:focus-visible {
+  background: #e2e8f0;
+  color: #0f172a;
+  border-color: #94a3b8;
   outline: none;
 }
 
